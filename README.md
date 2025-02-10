@@ -3,7 +3,7 @@
 This repository serves as an archive of documentation and code for modelling, simulating and controlling a rotary inverted pendulum I built to learn more about control techniques. The focus is on applying multiple control implementations for educational purposes.
 
 ## Contents
-📖 **Documentation** - How to Assemble, Hardware Requirements, Useful Links. \
+📖 **Documentation** - How to Assemble, Hardware Requirements, Useful Links, Hardware Purchase Links (Where I bought the hardware). \
 ⚙️ **Control Implementations** - Linear Quadratic Regulator (LQR). \
 🖥️ **Code** - Mathematical Model, Simulation, Control Implementation on Arduino Uno.
 
