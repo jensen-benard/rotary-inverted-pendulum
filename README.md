@@ -1,2 +1,3 @@
-# rotary-inverted-pendulum
-Modelling, simulation and controls for a rotary inverted pendulum using off-the-shelf parts.
+# Rotary Inverted Pendulum
+## Introduction
+Model, simulate and build a rotary inverted pendulum.
