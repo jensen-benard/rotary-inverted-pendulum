@@ -8,9 +8,9 @@ This repository serves as an archive of documentation and code for modelling, si
 🖥️ **Code** - Mathematical Model, Simulation, Control Implementation on Arduino Uno.
 
 ## Usage 
-This repository is intended as a reference for anyone interested in control systems and the rotary inverted pendulum. While it is not actively maintained, all code and documentation are provided to be used as you wish.
+This repository is intended as a reference for anyone interested in control systems and the rotary inverted pendulum. While it is not actively maintained, all code and documentation are provided to be used as you wish. Follow the [project details](#projectdetails) to learn how to use the contents of this repository.
 
-## Project Details
+## Project Details <a id='projectdetails'></a>
 ### Hardware
 ### Assembly
 ### Programming
