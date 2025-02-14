@@ -54,7 +54,6 @@ print(f"Damping coefficient: {damping_coefficient_solved}")
 # plt.ylabel("Value")
 # plt.show()
 
-damping_coefficient_solved = 0.0005666175203960749
 natural_omega_val = natural_omega_expression.subs(damping_coefficient, damping_coefficient_solved).simplify()
 print("Natural angular frequency: {:.3f} deg/s".format(natural_omega_val))
 
