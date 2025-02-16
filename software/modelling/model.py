@@ -1,3 +1,10 @@
+"""
+This file derives the mathematical model of the rotary inverted pendulum.
+Linearisation and control design are performed here.
+This file is imported by `simulate.py`.
+"""
+
+
 import os
 from dataclasses import dataclass
 from enum import Enum
@@ -32,8 +39,14 @@ class LinearStateSpaceModel:
     C: np.ndarray
     D: np.ndarray
 
-class control_method(Enum):
-    LQR = 1
+
+@dataclass
+class LinearQuadraticRegulator:
+    Q: np.ndarray
+    R: float
+    K: np.ndarray = None
+    S: np.ndarray = None
+    E: np.ndarray = None
 
 
 def __get_non_linear_dynamics_model(debug=False):
@@ -213,7 +226,7 @@ def __get_linear_state_space_model(debug=False):
     return LinearStateSpaceModel(A, B, C, D)
 
 
-def __get_lqr_gains(debug=False):
+def __get_lqr_gains(Q, R, debug=False):
 
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -223,14 +236,6 @@ def __get_lqr_gains(debug=False):
     logger.debug("In __get_lqr_gains()")
 
     linear_state_space_model = __get_linear_state_space_model(debug=debug)
-
-    Q = np.array([
-        [10, 0, 0, 0],
-        [0, 0.016667, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 0.016667]
-    ])
-    R = 0.01
     
     K, S, E = control.lqr(linear_state_space_model.A, linear_state_space_model.B, Q, R)
 
@@ -241,7 +246,7 @@ def __get_lqr_gains(debug=False):
     return K
 
 
-def load_closed_loop_linear_state_space_model(debug=False):
+def load_closed_loop_linear_state_space_model(control_method,debug=False):
 
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -252,9 +257,10 @@ def load_closed_loop_linear_state_space_model(debug=False):
 
     linear_state_space_model = __get_linear_state_space_model(debug=debug)
 
-    K = __get_lqr_gains(debug=debug)
+    if type(control_method) == LinearQuadraticRegulator:
+        control_method.K = __get_lqr_gains(control_method.Q, control_method.R,debug=debug)    
 
-    Acl = linear_state_space_model.A - linear_state_space_model.B * K
+    Acl = linear_state_space_model.A - linear_state_space_model.B * control_method.K
     logger.debug("Acl: \n%s", Acl)
 
     Dcl = 0
@@ -284,3 +290,10 @@ def load_non_linear_dynamics_model_lambdified(debug=False):
 
 def load_linear_state_space_model(debug=False):
     return __get_linear_state_space_model(debug=debug)
+
+
+if __name__ == "__main__":
+    # Run to debug
+    __get_non_linear_dynamics_model(debug=True)
+    __get_linear_state_space_model(debug=True)
+    __get_lqr_gains(Q=np.eye(4), R=1, debug=True)
