@@ -1,7 +1,5 @@
 """
 Simulate the models of the rotary inverted pendulum provided by model.py
-
-Date: 14th Feburary 2025
 """
 
 import os
@@ -22,11 +20,8 @@ def non_linear_dynamics_system(x, t, non_linear_dynamics_model, torque=0):
     return dxdt
 
 
-def simulate_non_linear_dynamics_model(t=np.arange(0, 5, 0.0001), y0=[0.01, 0, 0.01, 0], torque=0, experiment_comparison_file_path=None):
+def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_file_path=None):
     non_linear_dynamics_model = model.load_non_linear_dynamics_model_lambdified()
-
-    t = t
-    y0 = y0
 
     s = odeint(non_linear_dynamics_system, y0, t, args=(non_linear_dynamics_model, torque))
     
@@ -71,15 +66,13 @@ def simulate_non_linear_dynamics_model(t=np.arange(0, 5, 0.0001), y0=[0.01, 0, 0
     plt.show()
 
 
-def simulate_closed_loop_linear_state_space_model(y0=[0.01, 0, 0.01, 0], control_method=model.control_method.LQR):
-    closed_loop_linear_state_space_model = model.load_closed_loop_linear_state_space_model()
+def simulate_closed_loop_linear_state_space_model(t, y0, control_method):
+    closed_loop_linear_state_space_model = model.load_closed_loop_linear_state_space_model(control_method)
 
     sysAcl = signal.StateSpace(closed_loop_linear_state_space_model.A, 
                                 closed_loop_linear_state_space_model.B, 
                                 closed_loop_linear_state_space_model.C, 
                                 closed_loop_linear_state_space_model.D)
-    t = np.arange(0, 5, 0.0001)
-    y0 = y0
     external_disturbance = 0
 
     T, yout, xout = signal.lsim(sysAcl, external_disturbance, t, y0)
@@ -117,9 +110,23 @@ def simulate_closed_loop_linear_state_space_model(y0=[0.01, 0, 0.01, 0], control
     plt.show()
 
 
+def run_lqr_sim():
+    lqr = model.LinearQuadraticRegulator(Q = [[1, 0, 0, 0], 
+                                        [0, 1, 0, 0], 
+                                        [0, 0, 1, 0],
+                                        [0, 0, 0, 1]],
+                                        R = 0.01)
+    simulate_closed_loop_linear_state_space_model(t=np.arange(0, 5, 0.001), y0=[0.01, 0, 1, 0], control_method=lqr)
 
 
-experiment_01 = "software/modelling/experiment/damping_coefficient/pendulum_free_swing_experiment_data_01.txt"
-simulate_non_linear_dynamics_model(y0=[0.1, 0, 1.125, 0], experiment_comparison_file_path=experiment_01)
+def run_non_linear_dynamics_sim():
+    experiment_01 = "software/modelling/experiment/damping_coefficient/pendulum_free_swing_experiment_data_01.txt"
+    simulate_non_linear_dynamics_model(t=np.arange(0, 5, 0.001), y0=[0.1, 0, 1.125, 0], experiment_comparison_file_path=experiment_01)
 
-#simulate_closed_loop_linear_state_space_model(y0=[0.01, 0, 1, 0], control_method=model.control_method.LQR)
+
+
+if __name__ == "__main__":
+    # Simulation options
+
+    #run_non_linear_dynamics_sim()
+    run_lqr_sim()
