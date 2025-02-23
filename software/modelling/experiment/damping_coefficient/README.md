@@ -19,3 +19,7 @@ Estimates the damping coefficient of the pendulum from an experiment letting the
 2. The control program will automatically start recording the angle of the pendulum as it swings and print out into the serial monitor.
 3. Once the serial monitors outputs 'Done', the recording has finished.
 4. Copy the content of the serial monitor and store it inside a file. In this case, the file is called ```pendulum_free_swing_experiment_data_01.txt```.
+
+## Example Results
+
+![Damping Coefficient Measurement](figures/computed_damping_coeffs_plots.png)
