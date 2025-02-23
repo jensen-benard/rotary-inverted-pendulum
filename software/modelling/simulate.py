@@ -41,8 +41,8 @@ def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_fi
         data = np.loadtxt(experiment_comparison_file_path)
         data_sample_rate = 1000
         data_t = np.arange(0, len(data)) / data_sample_rate
-        angle_offset = 180 # when doing the experiment, the zero angle was set at the bottom of the pendulum swing.
-        time_offset = 342 / data_sample_rate
+        angle_offset = 180 # when doing the experiment, the zero angle was set at the bottom of the pendulum swing but it should be at the top.
+        time_offset = 342 / data_sample_rate # the experiment started 342 samples into the recording
         ax[2].plot(data_t - time_offset, data + angle_offset, label="experiment_data")
     elif experiment_comparison_file_path is not None:
         print("File does not exist: {}".format(experiment_comparison_file_path))
