@@ -20,22 +20,8 @@ def non_linear_dynamics_system(x, t, non_linear_dynamics_model, torque=0):
     return dxdt
 
 
-def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_file_path=None):
-    non_linear_dynamics_model = model.load_non_linear_dynamics_model_lambdified()
-
-    s = odeint(non_linear_dynamics_system, y0, t, args=(non_linear_dynamics_model, torque))
-    
-    s_deg = s / np.pi * 180 # convert from radians to degress
-
+def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_file_path=None, set_y0_to_experiment_initial_conditions=False):
     fig, ax = plt.subplots(4, 1)
-    ax[0].plot(t, s_deg[:, 0], label="theta_arm_model")
-    ax[0].grid(True)
-    ax[1].plot(t, s_deg[:, 1], label="theta_arm_dot_model")
-    ax[1].grid(True)
-    ax[2].plot(t, s_deg[:, 2], label="theta_pendulum_model")
-    ax[2].grid(True)
-    ax[3].plot(t, s_deg[:, 3], label="theta_pendulum_dot_model")
-    ax[3].grid(True)
 
     if os.path.exists(experiment_comparison_file_path):
         data = np.loadtxt(experiment_comparison_file_path)
@@ -44,8 +30,33 @@ def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_fi
         angle_offset = 180 # when doing the experiment, the zero angle was set at the bottom of the pendulum swing but it should be at the top.
         time_offset = 342 / data_sample_rate # the experiment started 342 samples into the recording
         ax[2].plot(data_t - time_offset, data + angle_offset, label="experiment_data")
+
+        if set_y0_to_experiment_initial_conditions:
+            # Make the start of the simulation match the start of the experiment when the pendulum is actually let go.
+            first_minima = signal.find_peaks(-data)[0][0]
+            first_maxima = signal.find_peaks(data)[0][0]
+            data_true_start = (data[min(first_minima, first_maxima)] + angle_offset) / 180 * np.pi
+            y0 = [0, 0, data_true_start, 0]
+
     elif experiment_comparison_file_path is not None:
         print("File does not exist: {}".format(experiment_comparison_file_path))
+
+
+    non_linear_dynamics_model = model.load_non_linear_dynamics_model_lambdified()
+
+    s = odeint(non_linear_dynamics_system, y0, t, args=(non_linear_dynamics_model, torque))
+    
+    s_deg = s / np.pi * 180 # convert from radians to degress
+
+
+    ax[0].plot(t, s_deg[:, 0], label="theta_arm_model")
+    ax[0].grid(True)
+    ax[1].plot(t, s_deg[:, 1], label="theta_arm_dot_model")
+    ax[1].grid(True)
+    ax[2].plot(t, s_deg[:, 2], label="theta_pendulum_model")
+    ax[2].grid(True)
+    ax[3].plot(t, s_deg[:, 3], label="theta_pendulum_dot_model")
+    ax[3].grid(True)
     
     ax[0].legend()
     ax[1].legend()
@@ -120,13 +131,13 @@ def run_lqr_sim():
 
 
 def run_non_linear_dynamics_sim():
-    experiment_01 = "software/modelling/experiment/damping_coefficient/pendulum_free_swing_experiment_data_01.txt"
-    simulate_non_linear_dynamics_model(t=np.arange(0, 5, 0.001), y0=[0.1, 0, 1.125, 0], experiment_comparison_file_path=experiment_01)
+    file_name = "pendulum_free_swing_experiment_data_01.txt"
+    experiment_01 = os.path.join(os.curdir, "modelling", "experiment", "damping_coefficient", file_name)
+    simulate_non_linear_dynamics_model(t=np.arange(0, 5, 0.001), y0=None, experiment_comparison_file_path=experiment_01, set_y0_to_experiment_initial_conditions=True)
 
 
 
 if __name__ == "__main__":
     # Simulation options
-
-    #run_non_linear_dynamics_sim()
-    run_lqr_sim()
+    run_non_linear_dynamics_sim()
+    #run_lqr_sim()
