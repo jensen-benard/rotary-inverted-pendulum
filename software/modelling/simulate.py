@@ -10,6 +10,16 @@ import matplotlib.pyplot as plt
 import model
 
 
+def read_data_with_header(file_path):
+    with open(file_path) as f:
+        lines = f.readlines()
+        header = lines[0].strip().split(', ')
+        column_values = lines[1].strip().split(', ')
+        column_values = [float(value) for value in column_values]
+        info = {header[i]: column_values[i] for i in range(len(header))}
+        data = [float(line.strip()) for line in lines[2:]]
+    return info, data
+
 
 def non_linear_dynamics_system(x, t, non_linear_dynamics_model, torque=0):
     theta_ddot_arm = non_linear_dynamics_model.theta_ddot_arm_lambdified(x[0], x[1], x[2], x[3], torque)
@@ -24,34 +34,40 @@ def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_fi
     fig, ax = plt.subplots(4, 1)
 
     if experiment_comparison_file_path is not None and os.path.exists(experiment_comparison_file_path):
-        data = np.loadtxt(experiment_comparison_file_path)
-        data_sample_rate = 1000
+        info, data = read_data_with_header(experiment_comparison_file_path)
+        data = np.array(data)
+        data_sample_rate = info["sample_rate"]
         data_t = np.arange(0, len(data)) / data_sample_rate
         angle_offset = 180 # when doing the experiment, the zero angle was set at the bottom of the pendulum swing but it should be at the top.
-        time_offset = 342 / data_sample_rate # the experiment started 342 samples into the recording
+        
+        # Finding the offset start
+        first_minima = signal.find_peaks(-data)[0][0]
+        first_maxima = signal.find_peaks(data)[0][0]
+        data_true_start_index = min(first_minima, first_maxima)
+        time_offset = data_true_start_index / data_sample_rate
         ax[2].plot(data_t - time_offset, data + angle_offset, label="experiment_data")
 
         if set_y0_to_experiment_initial_conditions:
             # Make the start of the simulation match the start of the experiment when the pendulum is actually let go.
             print("Setting y0 to experiment initial conditions (ignoring y0 argument).")
-            first_minima = signal.find_peaks(-data)[0][0]
-            first_maxima = signal.find_peaks(data)[0][0]
-            data_true_start = (data[min(first_minima, first_maxima)] + angle_offset) / 180 * np.pi
+            data_true_start = (data[data_true_start_index] + angle_offset) / 180 * np.pi
             y0 = [0, 0, data_true_start, 0]
 
             fig.text(0.5, 0.04, f"Initial Conditions: {y0} (Same as experiment ICs)", ha='center', va='center')
         else:
             fig.text(0.5, 0.04, f"Initial Conditions: {y0}", ha='center', va='center')
-            if y0 is None:
-                raise TypeError("y0 cannot be None")
         
-        fig.text(0.5, 0.02, f"Comparison with experiment: {experiment_comparison_file_path}", ha='center', va='center')
+        fig.text(0.5, 0.02, f"Comparison with experiment: {experiment_comparison_file_path}", ha='center', va='center', wrap=True)
+        fig.suptitle("Non-Linear Dynamics Model Simulation Compared to Experiment", fontsize=14)
 
     elif experiment_comparison_file_path is not None:
-        raise FileNotFoundError("File does not exist: {}".format(experiment_comparison_file_path))
-    else:   
+        raise FileNotFoundError("File does not exist: {}".format(os.path.abspath(experiment_comparison_file_path)))
+    else:
+        fig.suptitle("Non-Linear Dynamics Model Simulation", fontsize=14)
         fig.text(0.5, 0.04, f"Initial Conditions: {y0}", ha='center', va='center')
 
+    if y0 is None:
+        raise TypeError("y0 cannot be None")
 
     non_linear_dynamics_model = model.load_non_linear_dynamics_model_lambdified()
 
@@ -82,9 +98,8 @@ def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_fi
     ax[1].set_ylabel("theta_arm_dot (deg/s)")
     ax[2].set_ylabel("theta_pendulum (deg)")
     ax[3].set_ylabel("theta_pendulum_dot (deg/s)")
-
-
-    plt.tight_layout()
+    
+    fig.tight_layout()
     plt.show()
 
 
@@ -131,7 +146,8 @@ def simulate_closed_loop_linear_state_space_model(t, y0, control_method):
     ax[2].set_ylabel("theta_pendulum (deg)")
     ax[3].set_ylabel("theta_pendulum_dot (deg/s)")
 
-    plt.tight_layout()
+    fig.suptitle("Closed Loop Linear State Space Model Simulation", fontsize=14)
+    fig.tight_layout()
     plt.show()
 
 
@@ -145,9 +161,12 @@ def run_lqr_sim():
 
 
 def run_non_linear_dynamics_sim():
-    file_name = "pendulum_free_swing_experiment_data_01.txt"
-    experiment_01 = os.path.join(os.curdir, "modelling", "experiment", "damping_coefficient", file_name)
-    simulate_non_linear_dynamics_model(t=np.arange(0, 5, 0.001), y0=None, experiment_comparison_file_path=experiment_01, set_y0_to_experiment_initial_conditions=True)
+    # Choose one of 3 experiment data files
+    file_name_01 = "pendulum_free_swing_data_01.txt"
+    file_name_02 = "pendulum_free_swing_data_02.txt"
+    file_name_03 = "pendulum_free_swing_data_03.txt"
+    experiment = os.path.join("software", "modelling", "experiment", "damping_coefficient", file_name_03)
+    simulate_non_linear_dynamics_model(t=np.arange(0, 5, 0.001), y0=None, experiment_comparison_file_path=experiment, set_y0_to_experiment_initial_conditions=True)
 
 
 
