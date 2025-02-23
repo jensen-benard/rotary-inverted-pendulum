@@ -22,3 +22,11 @@ To use the code in this folder, follow these steps:
 flowchart LR
     A[model.py] -- imported by --> B[simulation.py] -- outputs -->  C@{ shape: lean-r, label: "Simulation graphical plots" }
 ```
+
+## Examples
+
+Some examples of simulation plots:
+
+![Simulation of closed loop linearised system with LQR derived gains.](figures/simulation_closed_loop_linearised_lqr.png)
+
+![Simulation of non-linear system compared to real data of a freely swinging pendulum.](figures/simulation_non_linear_experiment_comparison.png)
