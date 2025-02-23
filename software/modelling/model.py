@@ -66,7 +66,7 @@ def __get_non_linear_dynamics_model(debug=False):
     hinge_center_offset = 0.002
     coupler_offset = 0.011
     motor_damping_factor = 100
-    pendulum_damping_factor = 0.0006666175203960749
+    pendulum_damping_factor = 0.00046380052104552763 # Acquired from experiment/damping_coefficient (average)
 
 
     # motor datasheet properties
