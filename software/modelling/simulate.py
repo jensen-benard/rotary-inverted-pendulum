@@ -23,7 +23,7 @@ def non_linear_dynamics_system(x, t, non_linear_dynamics_model, torque=0):
 def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_file_path=None, set_y0_to_experiment_initial_conditions=False):
     fig, ax = plt.subplots(4, 1)
 
-    if os.path.exists(experiment_comparison_file_path):
+    if experiment_comparison_file_path is not None and os.path.exists(experiment_comparison_file_path):
         data = np.loadtxt(experiment_comparison_file_path)
         data_sample_rate = 1000
         data_t = np.arange(0, len(data)) / data_sample_rate
@@ -33,13 +33,24 @@ def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_fi
 
         if set_y0_to_experiment_initial_conditions:
             # Make the start of the simulation match the start of the experiment when the pendulum is actually let go.
+            print("Setting y0 to experiment initial conditions (ignoring y0 argument).")
             first_minima = signal.find_peaks(-data)[0][0]
             first_maxima = signal.find_peaks(data)[0][0]
             data_true_start = (data[min(first_minima, first_maxima)] + angle_offset) / 180 * np.pi
             y0 = [0, 0, data_true_start, 0]
 
+            fig.text(0.5, 0.04, f"Initial Conditions: {y0} (Same as experiment ICs)", ha='center', va='center')
+        else:
+            fig.text(0.5, 0.04, f"Initial Conditions: {y0}", ha='center', va='center')
+            if y0 is None:
+                raise TypeError("y0 cannot be None")
+        
+        fig.text(0.5, 0.02, f"Comparison with experiment: {experiment_comparison_file_path}", ha='center', va='center')
+
     elif experiment_comparison_file_path is not None:
-        print("File does not exist: {}".format(experiment_comparison_file_path))
+        raise FileNotFoundError("File does not exist: {}".format(experiment_comparison_file_path))
+    else:   
+        fig.text(0.5, 0.04, f"Initial Conditions: {y0}", ha='center', va='center')
 
 
     non_linear_dynamics_model = model.load_non_linear_dynamics_model_lambdified()
@@ -47,7 +58,6 @@ def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_fi
     s = odeint(non_linear_dynamics_system, y0, t, args=(non_linear_dynamics_model, torque))
     
     s_deg = s / np.pi * 180 # convert from radians to degress
-
 
     ax[0].plot(t, s_deg[:, 0], label="theta_arm_model")
     ax[0].grid(True)
@@ -73,6 +83,7 @@ def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_fi
     ax[2].set_ylabel("theta_pendulum (deg)")
     ax[3].set_ylabel("theta_pendulum_dot (deg/s)")
 
+
     plt.tight_layout()
     plt.show()
 
@@ -91,6 +102,9 @@ def simulate_closed_loop_linear_state_space_model(t, y0, control_method):
     fig, ax = plt.subplots(4, 1)
 
     xout_deg = xout / np.pi * 180 # convert from radians to degress
+
+    fig.text(0.5, 0.05, f"Initial Conditions: {y0}", ha='center', va='center')
+    fig.text(0.5, 0.02, f"Control Method: {control_method}", ha='center', va='center', wrap=True)
 
     print(type(xout[:, 0]))
     ax[0].plot(T, xout_deg[:, 0], label="theta_arm_model")
@@ -139,5 +153,5 @@ def run_non_linear_dynamics_sim():
 
 if __name__ == "__main__":
     # Simulation options
-    run_non_linear_dynamics_sim()
-    #run_lqr_sim()
+    #run_non_linear_dynamics_sim()
+    run_lqr_sim()
