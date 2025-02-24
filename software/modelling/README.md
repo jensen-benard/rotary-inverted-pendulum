@@ -23,6 +23,9 @@ flowchart LR
     A[model.py] -- imported by --> B[simulation.py] -- outputs -->  C@{ shape: lean-r, label: "Simulation graphical plots" }
 ```
 
+## Note
+Initial Conditions are expressed as an array of the form `[theta_arm, theta_arm_dot, theta_pendulum, theta_pendulum_dot]`.
+
 ## Example Results
 
 Some examples of simulation plots:
