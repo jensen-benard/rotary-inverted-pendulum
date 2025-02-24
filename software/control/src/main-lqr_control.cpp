@@ -29,19 +29,27 @@ AccelStepper stepper(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
 
 
 typedef struct {
-  double kThetaPendulum;
-  double kThetaPendulumDot;
   double kThetaArm;
   double kThetaArmDot;
+  double kThetaPendulum;
+  double kThetaPendulumDot;
 } lqrGains;
 
 lqrGains gains {
-  .kThetaPendulum = 6.3958e+03,
-  .kThetaPendulumDot = 550.8507,
-  .kThetaArm = 1000,
-  .kThetaArmDot = 430.6257
+  .kThetaArm = -999.99999992,
+  .kThetaArmDot =  -397.81772655,
+  .kThetaPendulum = -5323.95536579,
+  .kThetaPendulumDot = -480.25921854
 };
 
+float trackingGain = -999.99999992;
+float referenceArmAngleDegrees = 0;
+
+#define TOTAL_REF_ANGLES 10
+float refAngles[TOTAL_REF_ANGLES] = {0, -45, 0, 45, 90, 80, 60, 30, 100, 45};
+
+int index = 0;
+const float ANGLE_LIMIT = 180;
 float angleOffset = 180;
 
 float controlInput = 0;
@@ -74,21 +82,13 @@ float integralTerm = 0;
 
 float integralGain = 0.4;
 
+double prevRefAngleTime = 0;
+const float REF_ANGLE_CHANGE_TIME_PERIOD = 3;
+
 float getPendulumnAngle() {
     long encoderPos = encoder.read();
     float angleDegrees = encoderPos / PULSES_PER_DEGREE + angleOffset;
     return angleDegrees;
-}
-
-float adjustForDirection(float angle, float controlInput) {
-  if (angle < 0) {
-    // Apply correction for counterclockwise direction (angle < 0)
-    controlInput *= 1.6; // Example correction factor for counterclockwise
-  } else {
-    // Apply correction for clockwise direction (angle >= 0)
-    controlInput *= 1.0; // Example correction factor for clockwise
-  }
-  return controlInput;
 }
 
 void setup() {
@@ -136,28 +136,38 @@ void setup() {
 void loop() {
   
 
-  if (abs(stepper.currentPosition()) / MICROSTEPS_PER_DEGREE > 90) {
+  if (abs(stepper.currentPosition()) / MICROSTEPS_PER_DEGREE > ANGLE_LIMIT) {
     stepper.stop();
     delay(10000);
   }
-  
+
+  double currRefAngleTime = micros() * SECONDS_PER_MICROSECOND;
+  if (currRefAngleTime - prevRefAngleTime > REF_ANGLE_CHANGE_TIME_PERIOD) {
+    referenceArmAngleDegrees = refAngles[index];
+    index++;
+    if (index > TOTAL_REF_ANGLES - 1) {
+      index = 0;
+    }
+    prevRefAngleTime = currRefAngleTime;
+  }
 
   double currTime = micros() * SECONDS_PER_MICROSECOND;
   double deltaT = currTime - prevTime;
   float pendulumAngleDegrees = getPendulumnAngle();
   pendulumSpeed = (pendulumAngleDegrees - prevPendulumAngleDegrees) / (deltaT);
   armAngleDegrees = stepper.currentPosition() / MICROSTEPS_PER_DEGREE;
-  float armAngleDegreesError  = armAngleDegrees - 0;
+  float armAngleDegreesError  = armAngleDegrees - referenceArmAngleDegrees;
   integralTerm += armAngleDegreesError;
   armSpeed = (armAngleDegrees - prevArmAngleDegrees) / (deltaT);
-  controlInput = gains.kThetaPendulum * pendulumAngleDegrees 
-                  + gains.kThetaPendulumDot * pendulumSpeed 
-                  + gains.kThetaArm * armAngleDegrees 
-                  + gains.kThetaArmDot * armSpeed
-                  + integralGain * integralTerm;
+  controlInput = - gains.kThetaPendulum * pendulumAngleDegrees 
+                  - gains.kThetaPendulumDot * pendulumSpeed 
+                  - gains.kThetaArm * armAngleDegrees 
+                  - gains.kThetaArmDot * armSpeed
+                  //+ integralGain * integralTerm;
+                  + trackingGain * referenceArmAngleDegrees;
 
-  float inputAccel = controlInput;
-  inputSpeed = prevInputSpeed + inputAccel * deltaT/18;
+  float inputAccel = controlInput / 20;
+  inputSpeed = prevInputSpeed + inputAccel * deltaT;
 
   #ifdef DEBUG
     Serial.print("controlInput: ");

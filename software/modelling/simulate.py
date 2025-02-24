@@ -103,16 +103,28 @@ def simulate_non_linear_dynamics_model(t, y0, torque=0, experiment_comparison_fi
     plt.show()
 
 
-def simulate_closed_loop_linear_state_space_model(t, y0, control_method):
+def simulate_closed_loop_linear_state_space_model(t, y0, control_method, u=0, use_tracking_gain=False):
     closed_loop_linear_state_space_model = model.load_closed_loop_linear_state_space_model(control_method)
 
+
+    eigens = np.linalg.eig(closed_loop_linear_state_space_model.A)
+    print(f"Eigen Values: {eigens[0]}")
+
+    if use_tracking_gain is not None:
+        N = np.linalg.inv(-(closed_loop_linear_state_space_model.C.reshape((1, 4)) @ np.linalg.inv(closed_loop_linear_state_space_model.A) @ closed_loop_linear_state_space_model.B.reshape((4, 1))))
+        print(f"tracking gain: {N}")
+        B_new = closed_loop_linear_state_space_model.B @ N
+        # u is now the reference angle to track
+    else:
+        B_new = closed_loop_linear_state_space_model.B
+        # otherwise u is an external disturbance
+
     sysAcl = signal.StateSpace(closed_loop_linear_state_space_model.A, 
-                                closed_loop_linear_state_space_model.B, 
+                                B_new, 
                                 closed_loop_linear_state_space_model.C, 
                                 closed_loop_linear_state_space_model.D)
-    external_disturbance = 0
 
-    T, yout, xout = signal.lsim(sysAcl, external_disturbance, t, y0)
+    T, yout, xout = signal.lsim(sysAcl, u, t, y0)
 
     fig, ax = plt.subplots(4, 1)
 
@@ -121,7 +133,6 @@ def simulate_closed_loop_linear_state_space_model(t, y0, control_method):
     fig.text(0.5, 0.05, f"Initial Conditions: {y0}", ha='center', va='center')
     fig.text(0.5, 0.02, f"Control Method: {control_method}", ha='center', va='center', wrap=True)
 
-    print(type(xout[:, 0]))
     ax[0].plot(T, xout_deg[:, 0], label="theta_arm_model")
     ax[0].grid(True)
     ax[1].plot(T, xout_deg[:, 1], label="theta_arm_dot_model")
@@ -152,12 +163,14 @@ def simulate_closed_loop_linear_state_space_model(t, y0, control_method):
 
 
 def run_lqr_sim():
-    lqr = model.LinearQuadraticRegulator(Q = [[1, 0, 0, 0], 
-                                        [0, 1, 0, 0], 
-                                        [0, 0, 1, 0],
-                                        [0, 0, 0, 1]],
-                                        R = 0.01)
-    simulate_closed_loop_linear_state_space_model(t=np.arange(0, 5, 0.001), y0=[0.01, 0, 1, 0], control_method=lqr)
+    lqr = model.LinearQuadraticRegulator(Q = [[10, 0, 0, 0], 
+                                            [0, 0.016667, 0, 0], 
+                                            [0, 0, 1, 0],
+                                            [0, 0, 0, 0.016667]],
+                                        R = 0.00001)
+    t = np.arange(0, 5, 0.001)
+    r = np.ones_like(t) * 0.436 # 25 degrees in radians
+    simulate_closed_loop_linear_state_space_model(t=t, y0=[0.01, 0, 0.01, 0], control_method=lqr, u=r, use_tracking_gain=True)
 
 
 def run_non_linear_dynamics_sim():

@@ -86,7 +86,7 @@ def __get_non_linear_dynamics_model(debug=False):
     length_arm = coupler_offset + length_rod + hinge_center_offset
     rot_inertia_arm = inertia_motor + mass_arm * (radius_rod**2 / 4 + length_arm**2 / 12) + mass_arm * (length_arm / 2)**2  # using parallel axis theorem
     damping_coeff_arm = motor_damping_factor
-
+    
     # arm symbols
     M_arm = sp.Symbol("M_arm", real=True)
     L_arm = sp.Symbol("L_arm", real=True)
@@ -239,7 +239,7 @@ def __get_lqr_gains(Q, R, debug=False):
     
     K, S, E = control.lqr(linear_state_space_model.A, linear_state_space_model.B, Q, R)
 
-    logger.debug("K: \n%s", K)
+    print(f"K: {K}")
     logger.debug("S: \n%s", S)
     logger.debug("E: \n%s", E)
 
@@ -265,7 +265,7 @@ def load_closed_loop_linear_state_space_model(control_method,debug=False):
 
     Dcl = 0
 
-    return LinearStateSpaceModel(Acl, linear_state_space_model.B, linear_state_space_model.C, Dcl)
+    return LinearStateSpaceModel(np.array(Acl, dtype=np.float64), np.array(linear_state_space_model.B, dtype=np.float64), np.array(linear_state_space_model.C, dtype=np.float64), Dcl)
 
 
 def load_non_linear_dynamics_model_lambdified(debug=False):
