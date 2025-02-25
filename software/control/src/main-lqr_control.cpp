@@ -36,20 +36,20 @@ typedef struct {
 } lqrGains;
 
 lqrGains gains {
-  .kThetaArm = -999.99999992,
-  .kThetaArmDot =  -397.81772655,
-  .kThetaPendulum = -5323.95536579,
-  .kThetaPendulumDot = -480.25921854
+  .kThetaArm = -1000.00000002,
+  .kThetaArmDot = -604.65043048,
+  .kThetaPendulum = -10689.08311825,
+  .kThetaPendulumDot = -958.04047177
 };
 
-float trackingGain = -999.99999992;
-float referenceArmAngleDegrees = 0;
+float trackingGain = -1000.00000003;
+float referenceArmAngleDegrees = 10;
 
 #define TOTAL_REF_ANGLES 10
-float refAngles[TOTAL_REF_ANGLES] = {0, -45, 0, 45, 90, 80, 60, 30, 100, 45};
+float refAngles[TOTAL_REF_ANGLES] = {0, -90, 0, 90, 0, 45, 100, 0, -80, 30};
 
 int index = 0;
-const float ANGLE_LIMIT = 180;
+const float ANGLE_LIMIT = 360;
 float angleOffset = 180;
 
 float controlInput = 0;
@@ -76,7 +76,10 @@ const float MICROSTEPS_PER_DEGREE = MICROSTEPS / DEGREES_PER_STEPS;
 
 float prevInputSpeed = 0;
 
-float startAngle = 5;
+float balanceTriggerAngle = 20;
+float balanceTriggerSpeed = 180;
+float swingUpTriggerAngle = 45;
+float K = 90;
 
 float integralTerm = 0;
 
@@ -85,12 +88,60 @@ float integralGain = 0.4;
 double prevRefAngleTime = 0;
 const float REF_ANGLE_CHANGE_TIME_PERIOD = 3;
 
+int sign (float val) {
+  if (val > 0) {
+    return 1;
+  } else if (val < 0) {
+    return -1;
+  } else {
+    return 0;
+  }
+}
+
+float deg2rad(float deg) {
+  return deg / 180 * PI;
+}
+
+float rad2deg(float rad) {
+  return rad / PI * 180;
+}
+
 float getPendulumnAngle() {
     long encoderPos = encoder.read();
     float angleDegrees = encoderPos / PULSES_PER_DEGREE + angleOffset;
     return angleDegrees;
 }
 
+
+float swingUp (float pendulumAngleDegrees, float pendulumSpeed) {
+  float cosPendulum = cos(pendulumAngleDegrees / 180 * PI);
+  float energy = 0.5 * 0.0005989206600000001 * (pendulumSpeed / 180 * PI) * (pendulumSpeed / 180 * PI) + 0.095715 * 9.81 * 0.137/2 * (-1 + cosPendulum) * 1.93;
+  float controlInput =  K * (energy - 0.1241357555) * sign(pendulumSpeed / 180 * PI * cosPendulum);
+
+  return rad2deg(controlInput);
+}
+
+float balance(float pendulumAngleDegrees, float pendulumSpeed, float armAngleDegrees, float armSpeed) {
+
+  double currRefAngleTime = micros() * SECONDS_PER_MICROSECOND;
+  if (currRefAngleTime - prevRefAngleTime > REF_ANGLE_CHANGE_TIME_PERIOD) {
+    referenceArmAngleDegrees = refAngles[index];
+    index++;
+    if (index > TOTAL_REF_ANGLES - 1) {
+      index = 0;
+    }
+    prevRefAngleTime = currRefAngleTime;
+  }
+
+  controlInput = - gains.kThetaPendulum * pendulumAngleDegrees 
+                  - gains.kThetaPendulumDot * pendulumSpeed 
+                  - gains.kThetaArm * armAngleDegrees 
+                  - gains.kThetaArmDot * armSpeed
+                  //+ integralGain * integralTerm;
+                  + trackingGain * referenceArmAngleDegrees;
+
+  return rad2deg(controlInput) * PI / 7200;
+}
 void setup() {
 
   Serial.begin(115200);               // initialize hardware serial for debugging
@@ -119,79 +170,55 @@ void setup() {
 
 
   prevTime = micros() * SECONDS_PER_MICROSECOND;
-
-
-  while (prevPendulumAngleDegrees > startAngle) {
-    prevTime = micros() * SECONDS_PER_MICROSECOND;
-    prevPendulumAngleDegrees = getPendulumnAngle();
-    prevArmAngleDegrees = stepper.currentPosition() / MICROSTEPS_PER_DEGREE;
-    #ifdef DEBUG
-      Serial.print("prevPendulumAngleDegrees: ");
-      Serial.println(prevPendulumAngleDegrees);
-    #endif
-  }
 }
 
-
+bool balancing = false;
 void loop() {
-  
-
-  if (abs(stepper.currentPosition()) / MICROSTEPS_PER_DEGREE > ANGLE_LIMIT) {
-    stepper.stop();
-    delay(10000);
-  }
-
-  double currRefAngleTime = micros() * SECONDS_PER_MICROSECOND;
-  if (currRefAngleTime - prevRefAngleTime > REF_ANGLE_CHANGE_TIME_PERIOD) {
-    referenceArmAngleDegrees = refAngles[index];
-    index++;
-    if (index > TOTAL_REF_ANGLES - 1) {
-      index = 0;
-    }
-    prevRefAngleTime = currRefAngleTime;
-  }
-
   double currTime = micros() * SECONDS_PER_MICROSECOND;
   double deltaT = currTime - prevTime;
   float pendulumAngleDegrees = getPendulumnAngle();
   pendulumSpeed = (pendulumAngleDegrees - prevPendulumAngleDegrees) / (deltaT);
   armAngleDegrees = stepper.currentPosition() / MICROSTEPS_PER_DEGREE;
-  float armAngleDegreesError  = armAngleDegrees - referenceArmAngleDegrees;
-  integralTerm += armAngleDegreesError;
   armSpeed = (armAngleDegrees - prevArmAngleDegrees) / (deltaT);
-  controlInput = - gains.kThetaPendulum * pendulumAngleDegrees 
-                  - gains.kThetaPendulumDot * pendulumSpeed 
-                  - gains.kThetaArm * armAngleDegrees 
-                  - gains.kThetaArmDot * armSpeed
-                  //+ integralGain * integralTerm;
-                  + trackingGain * referenceArmAngleDegrees;
 
-  float inputAccel = controlInput / 20;
-  inputSpeed = prevInputSpeed + inputAccel * deltaT;
+  if (balancing && abs(pendulumAngleDegrees) > swingUpTriggerAngle) {
+    balancing = false;
+    inputSpeed = 0;
+    Serial.println("Swing up mode");
+  } else if (!balancing && abs(pendulumAngleDegrees) < balanceTriggerAngle && abs(armSpeed) < balanceTriggerSpeed) {
+    balancing = true;
+    referenceArmAngleDegrees = armAngleDegrees;
 
-  #ifdef DEBUG
-    Serial.print("controlInput: ");
-    Serial.print(controlInput);
-    Serial.print(", inputSpeed: ");
-    Serial.print(inputSpeed);
-    Serial.print(", inputAccel: ");
-    Serial.print(inputAccel);
-    Serial.print(", deltaT: ");
-    Serial.print(deltaT, 8);
-    Serial.print(", pendulumSpeed: ");
-    Serial.print(pendulumSpeed);
-    Serial.print(", armSpeed: ");
-    Serial.print(armSpeed);
-    Serial.print(", armAngleDegrees: ");
-    Serial.println(armAngleDegrees);
-  #endif
+    for (int i = 0; i < TOTAL_REF_ANGLES; i++) {
+      refAngles[i] = armAngleDegrees + refAngles[i];
+    }
+    
+    index = 0;
+    prevRefAngleTime = micros() * SECONDS_PER_MICROSECOND;
 
-  
+    Serial.println("Balance mode");
+  }
+
+  if (abs(armAngleDegrees) > ANGLE_LIMIT) {
+    stepper.stop();
+    while(true) {
+      continue;
+    }
+  }
+
+  if (balancing) {
+    controlInput = balance(pendulumAngleDegrees, pendulumSpeed, armAngleDegrees, armSpeed);
+  } else {
+    controlInput = swingUp(pendulumAngleDegrees, pendulumSpeed);
+  }
+
+  float inputAccel = controlInput;
+  inputSpeed += inputAccel * deltaT;
   stepper.setSpeed(inputSpeed * MICROSTEPS_PER_DEGREE);
   stepper.runSpeed();
+
 
   prevTime = currTime;
   prevPendulumAngleDegrees = pendulumAngleDegrees;
   prevArmAngleDegrees = armAngleDegrees;
-  prevInputSpeed = inputSpeed;
 }

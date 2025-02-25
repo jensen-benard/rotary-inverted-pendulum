@@ -132,7 +132,7 @@ def simulate_closed_loop_linear_state_space_model(t, y0, control_method, u=0, us
 
     fig.text(0.5, 0.05, f"Initial Conditions: {y0}", ha='center', va='center')
     fig.text(0.5, 0.02, f"Control Method: {control_method}", ha='center', va='center', wrap=True)
-
+    
     ax[0].plot(T, xout_deg[:, 0], label="theta_arm_model")
     ax[0].grid(True)
     ax[1].plot(T, xout_deg[:, 1], label="theta_arm_dot_model")
@@ -164,9 +164,9 @@ def simulate_closed_loop_linear_state_space_model(t, y0, control_method, u=0, us
 
 def run_lqr_sim():
     lqr = model.LinearQuadraticRegulator(Q = [[10, 0, 0, 0], 
-                                            [0, 0.016667, 0, 0], 
-                                            [0, 0, 1, 0],
-                                            [0, 0, 0, 0.016667]],
+                                            [0, 0.9, 0, 0], 
+                                            [0, 0, 10, 0],
+                                            [0, 0, 0, 0.0001]],
                                         R = 0.00001)
     t = np.arange(0, 5, 0.001)
     r = np.ones_like(t) * 0.436 # 25 degrees in radians
