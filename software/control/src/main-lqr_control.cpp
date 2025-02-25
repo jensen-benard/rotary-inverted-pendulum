@@ -49,7 +49,7 @@ float referenceArmAngleDegrees = 10;
 float refAngles[TOTAL_REF_ANGLES] = {0, -90, 0, 90, 0, 45, 100, 0, -80, 30};
 
 int index = 0;
-const float ANGLE_LIMIT = 360;
+const float ANGLE_LIMIT = 720;
 float angleOffset = 180;
 
 float controlInput = 0;
@@ -79,7 +79,7 @@ float prevInputSpeed = 0;
 float balanceTriggerAngle = 20;
 float balanceTriggerSpeed = 180;
 float swingUpTriggerAngle = 45;
-float K = 90;
+float K = 80;
 
 float integralTerm = 0;
 
