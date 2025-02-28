@@ -4,161 +4,107 @@
 #include <SoftwareSerial.h>     // Software serial for the UART to TMC2209 - https://www.arduino.cc/en/Reference/softwareSerial
 #include <Stream.h>          // For serial debugging output - https://www.arduino.cc/reference/en/libraries/streaming/
 #include <Encoder.h>
+#include "state_variable.hpp"
+#include "control.hpp"
+#include "reference.hpp"
+#include "actuator.hpp"
+#include "accel_stepper_adapter.hpp"
+#include "encoder_adapter.hpp"
+#include "actuator.hpp"
+#include "sensor.hpp"
+#include "state.hpp"
+#include "transition.hpp"
+#include "state_machine.hpp"
+#include "rotary_inverted_pendulum_system.hpp"
+#include "input_variable.hpp"
 
-
-//#define DEBUG
-
-#define EN_PIN           8      // Enable - PURPLE
-#define DIR_PIN          7      // Direction - WHITE
-#define STEP_PIN         6      // Step - ORANGE
-#define SW_SCK           5      // Software Slave Clock (SCK) - BLUE
-#define SW_TX            9      // SoftwareSerial transmit pin - BROWN
-#define SW_RX            4      // SoftwareSerial receive pin - YELLOW
-#define DRIVER_ADDRESS   0b00   // TMC2209 Driver address according to MS1 and MS2
-#define R_SENSE 0.11f           // SilentStepStick series use 0.11 ...and so does my fysetc TMC2209 (?)
-
-#define ENCODER_A_PIN 2
-#define ENCODER_B_PIN 3
-
-Encoder encoder(ENCODER_A_PIN, ENCODER_B_PIN);
-
+constexpr int EN_PIN = 8;           // Enable - PURPLE
+constexpr int DIR_PIN = 7;          // Direction - WHITE
+constexpr int STEP_PIN = 6;         // Step - ORANGE
+constexpr int SW_SCK = 5;           // Software Slave Clock (SCK) - BLUE
+constexpr int SW_TX = 9;            // SoftwareSerial transmit pin - BROWN
+constexpr int SW_RX = 4;            // SoftwareSerial receive pin - YELLOW
+constexpr uint8_t DRIVER_ADDRESS = 0b00; // TMC2209 Driver address according to MS1 and MS2
+constexpr float R_SENSE = 0.11f;    // SilentStepStick series use 0.11 ...and so does my fysetc TMC2209 (?)
 SoftwareSerial SoftSerial(SW_RX, SW_TX, false);                          // Be sure to connect RX to TX and TX to RX between both devices
-
 TMC2209Stepper TMCdriver(&SoftSerial, R_SENSE, DRIVER_ADDRESS);   // Create TMC driver
 AccelStepper stepper(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
 
 
-typedef struct {
-  double kThetaArm;
-  double kThetaArmDot;
-  double kThetaPendulum;
-  double kThetaPendulumDot;
-} lqrGains;
+constexpr int ENCODER_A_PIN = 2;
+constexpr int ENCODER_B_PIN = 3;
+Encoder encoder(ENCODER_A_PIN, ENCODER_B_PIN);
 
-lqrGains gains {
-  .kThetaArm = -1000.00000002,
-  .kThetaArmDot = -604.65043048,
-  .kThetaPendulum = -10689.08311825,
-  .kThetaPendulumDot = -958.04047177
-};
+constexpr int TRAJECTORY_LENGTH = 10;
+constexpr int ANGLE_HOLD_TIME = 3;
+double trajectory[TRAJECTORY_LENGTH] = {0, -90, 0, 90, 0, 45, 100, 0, -80, 30};
+Reference reference(trajectory, TRAJECTORY_LENGTH, ANGLE_HOLD_TIME);
 
-float trackingGain = -1000.00000003;
-float referenceArmAngleDegrees = 10;
+constexpr int MICROSTEPS = 8;
+constexpr float DEGREES_PER_STEPS = 1.8;
+constexpr int PULSES_PER_ROTATION = 4000;
+constexpr int FULL_ROTATION_DEGREES = 360;
+constexpr float PULSES_PER_DEGREE = PULSES_PER_ROTATION / FULL_ROTATION_DEGREES;
+constexpr float MICROSTEPS_PER_DEGREE = MICROSTEPS / DEGREES_PER_STEPS;
+float ANGLE_OFFSET = 180;
+EncoderAdapter encoderAdapter(&encoder, ANGLE_OFFSET, PULSES_PER_DEGREE);
+AccelStepperAdapter stepperAdapter(&stepper, MICROSTEPS_PER_DEGREE);
 
-#define TOTAL_REF_ANGLES 10
-float refAngles[TOTAL_REF_ANGLES] = {0, -90, 0, 90, 0, 45, 100, 0, -80, 30};
+Sensor pendulumAngleSensor(&encoderAdapter);
+Sensor armAngleSensor(&stepperAdapter);
 
-int index = 0;
-const float ANGLE_LIMIT = 720;
-float angleOffset = 180;
+double proportionalGain = 80; 
+LyapunovControlMethod lyapunovControlMethod(proportionalGain);
 
-float controlInput = 0;
-float inputSpeed = 0;
+constexpr double thetaArmGain = -1000.00000002;
+constexpr double thetaArmDotGain = -604.65043048;
+constexpr double thetaPendulumGain = -10689.08311825;
+constexpr double thetaPendulumDotGain = -958.04047177;
+constexpr double trackingGain = -1000.00000003;
+LQRControlMethod lqrControlMethod(thetaArmGain, thetaArmDotGain, thetaPendulumGain, thetaPendulumDotGain, trackingGain);
 
-float prevPendulumAngleDegrees = angleOffset;
-float pendulumSpeed;
-float armAngleDegrees;
-float armSpeed;
-float prevArmAngleDegrees = 0;
+StateVariable pendulumAngle(0, 0, 0);
+StateVariable armAngle(0, 0, 0);
+StateVariable pendulumAngleRateOfChange(0, 0, 0);
+StateVariable armAngleRateOfChange(0, 0, 0);
 
-float prevTime = 0;
+constexpr int TOTAL_INPUTS = 10;
+constexpr int HOLD_TIME = 3;
+float referenceAngles[TOTAL_INPUTS] = {0, -90, 0, 90, 0, 45, 100, 0, -80, 30};
+TimeVaryingInput referenceAngle(referenceAngles, TOTAL_INPUTS, 0, HOLD_TIME);
 
-const double SECONDS_PER_MICROSECOND = 1e-6;
+RotaryInvertedPendulumSystem rotaryInvertedPendulumSystem(&stepperAdapter,
+                                                            &pendulumAngleSensor, &armAngleSensor,
+                                                            &lyapunovControlMethod, &lqrControlMethod,
+                                                            &pendulumAngle, &armAngle,
+                                                            &pendulumAngleRateOfChange, &armAngleRateOfChange,
+                                                            &referenceAngle);
 
-const long MAX_SPEED = 20000; // degrees per second
-const int MICROSTEPS = 8;
-const float DEGREES_PER_STEPS = 1.8;
+State swingUpState(nullptr, nullptr, &RotaryInvertedPendulumSystem::runSwingUpControl);
+State balanceState(nullptr, nullptr, &rotaryInvertedPendulumSystem::runBalanceControl);
 
-const int PULSES_PER_ROTATION = 4000;
-const int FULL_ROTATION_DEGREES = 360;
-const float PULSES_PER_DEGREE = PULSES_PER_ROTATION / FULL_ROTATION_DEGREES;
-const float MICROSTEPS_PER_DEGREE = MICROSTEPS / DEGREES_PER_STEPS;
+constexpr float SWING_UP_TRIGGER_ANGLE = 45;
+constexpr float BALANCE_TRIGGER_ANGLE = 20;
+constexpr float ARM_ANGLE_LIMIT = 720;
+StateMachine stateMachine(SWING_UP_TRIGGER_ANGLE, BALANCE_TRIGGER_ANGLE, ARM_ANGLE_LIMIT);
 
-float prevInputSpeed = 0;
-
-float balanceTriggerAngle = 20;
-float balanceTriggerSpeed = 180;
-float swingUpTriggerAngle = 45;
-float K = 80;
-
-float integralTerm = 0;
-
-float integralGain = 0.4;
-
-double prevRefAngleTime = 0;
-const float REF_ANGLE_CHANGE_TIME_PERIOD = 3;
-
-int sign (float val) {
-  if (val > 0) {
-    return 1;
-  } else if (val < 0) {
-    return -1;
-  } else {
-    return 0;
-  }
-}
-
-float deg2rad(float deg) {
-  return deg / 180 * PI;
-}
-
-float rad2deg(float rad) {
-  return rad / PI * 180;
-}
-
-float getPendulumnAngle() {
-    long encoderPos = encoder.read();
-    float angleDegrees = encoderPos / PULSES_PER_DEGREE + angleOffset;
-    return angleDegrees;
-}
-
-
-float swingUp (float pendulumAngleDegrees, float pendulumSpeed) {
-  float cosPendulum = cos(pendulumAngleDegrees / 180 * PI);
-  float energy = 0.5 * 0.0005989206600000001 * (pendulumSpeed / 180 * PI) * (pendulumSpeed / 180 * PI) + 0.095715 * 9.81 * 0.137/2 * (-1 + cosPendulum) * 1.93;
-  float controlInput =  K * (energy - 0.1241357555) * sign(pendulumSpeed / 180 * PI * cosPendulum);
-
-  return rad2deg(controlInput);
-}
-
-float balance(float pendulumAngleDegrees, float pendulumSpeed, float armAngleDegrees, float armSpeed) {
-
-  double currRefAngleTime = micros() * SECONDS_PER_MICROSECOND;
-  if (currRefAngleTime - prevRefAngleTime > REF_ANGLE_CHANGE_TIME_PERIOD) {
-    referenceArmAngleDegrees = refAngles[index];
-    index++;
-    if (index > TOTAL_REF_ANGLES - 1) {
-      index = 0;
-    }
-    prevRefAngleTime = currRefAngleTime;
-  }
-
-  controlInput = - gains.kThetaPendulum * pendulumAngleDegrees 
-                  - gains.kThetaPendulumDot * pendulumSpeed 
-                  - gains.kThetaArm * armAngleDegrees 
-                  - gains.kThetaArmDot * armSpeed
-                  //+ integralGain * integralTerm;
-                  + trackingGain * referenceArmAngleDegrees;
-
-  return rad2deg(controlInput) * PI / 7200;
-}
 void setup() {
 
   Serial.begin(115200);               // initialize hardware serial for debugging
   SoftSerial.begin(115200);           // initialize software serial for UART motor control
   SoftSerial.listen();
-  //TMCdriver.beginSerial(115200);      // Initialize UART
+
+  // TMCdriver.beginSerial(115200);      // Initialize UART
+  // TMCdriver.begin();                                                                                                                                                                                                                                                                                                                            // UART: Init SW UART (if selected) with default 115200 baudrate
+  // TMCdriver.toff(5);                 // Enables driver in software
+  // TMCdriver.rms_current(1000);        // Set motor RMS current
+  // TMCdriver.microsteps(MICROSTEPS);         // Set microsteps
+  // TMCdriver.en_spreadCycle(false);
+  // TMCdriver.pwm_autoscale(true);     // Needed for stealthChop
   
   pinMode(EN_PIN, OUTPUT);           // Set pinmodes
   pinMode(STEP_PIN, OUTPUT);
   pinMode(DIR_PIN, OUTPUT);
-
-  TMCdriver.begin();                                                                                                                                                                                                                                                                                                                            // UART: Init SW UART (if selected) with default 115200 baudrate
-  TMCdriver.toff(5);                 // Enables driver in software
-  TMCdriver.rms_current(1000);        // Set motor RMS current
-  TMCdriver.microsteps(MICROSTEPS);         // Set microsteps
-  TMCdriver.en_spreadCycle(false);
-  TMCdriver.pwm_autoscale(true);     // Needed for stealthChop
   
   stepper.setEnablePin(EN_PIN);
   stepper.setPinsInverted(false, false, true); 
@@ -168,57 +114,36 @@ void setup() {
   stepper.setMaxSpeed(5000000); // Steps per second
   stepper.setMinPulseWidth(5);
 
-
-  prevTime = micros() * SECONDS_PER_MICROSECOND;
 }
 
-bool balancing = false;
 void loop() {
-  double currTime = micros() * SECONDS_PER_MICROSECOND;
-  double deltaT = currTime - prevTime;
-  float pendulumAngleDegrees = getPendulumnAngle();
-  pendulumSpeed = (pendulumAngleDegrees - prevPendulumAngleDegrees) / (deltaT);
-  armAngleDegrees = stepper.currentPosition() / MICROSTEPS_PER_DEGREE;
-  armSpeed = (armAngleDegrees - prevArmAngleDegrees) / (deltaT);
+  systemStates.update(sensors.getArmAngle(), sensors.getPendulumAngle());
+  reference.update();
 
-  if (balancing && abs(pendulumAngleDegrees) > swingUpTriggerAngle) {
-    balancing = false;
-    inputSpeed = 0;
-    Serial.println("Swing up mode");
-  } else if (!balancing && abs(pendulumAngleDegrees) < balanceTriggerAngle && abs(armSpeed) < balanceTriggerSpeed) {
-    balancing = true;
-    referenceArmAngleDegrees = armAngleDegrees;
+  float pendulumAngle = systemStates.getPendulumAngle();
+  float pendulumAngularVelocity = systemStates.getPendulumAngularVelocity();
+  float armAngle = systemStates.getArmAngle();
+  float armAngularVelocity = systemStates.getArmAngularVelocity();
 
-    for (int i = 0; i < TOTAL_REF_ANGLES; i++) {
-      refAngles[i] = armAngleDegrees + refAngles[i];
-    }
-    
-    index = 0;
-    prevRefAngleTime = micros() * SECONDS_PER_MICROSECOND;
+  float referenceArmAngle = reference.getCurrentAngle();
+  float controlInput = controller.getOutput(armAngle, armAngularVelocity, pendulumAngle, pendulumAngularVelocity, referenceArmAngle);
 
-    Serial.println("Balance mode");
-  }
+  stateMachine.update(pendulumAngle, pendulumAngularVelocity, armAngle, armAngularVelocity);
 
-  if (abs(armAngleDegrees) > ANGLE_LIMIT) {
-    stepper.stop();
+  StateMachineEvent lastTriggeredEvent = stateMachine.getLastTriggeredEvent();
+
+  if (lastTriggeredEvent == TRIGGER_SWING_UP) {
+    controller.setControlMode(SWING_UP);
+  } else if (lastTriggeredEvent == TRIGGER_BALANCE) {
+    reference.reset(armAngle);
+    controller.setControlMode(BALANCE);
+  } else if (lastTriggeredEvent == ANGLE_LIMIT_REACHED) {
+    stepperActuator.stop();
     while(true) {
       continue;
     }
   }
 
-  if (balancing) {
-    controlInput = balance(pendulumAngleDegrees, pendulumSpeed, armAngleDegrees, armSpeed);
-  } else {
-    controlInput = swingUp(pendulumAngleDegrees, pendulumSpeed);
-  }
+  stepperActuator.actuate(controlInput);
 
-  float inputAccel = controlInput;
-  inputSpeed += inputAccel * deltaT;
-  stepper.setSpeed(inputSpeed * MICROSTEPS_PER_DEGREE);
-  stepper.runSpeed();
-
-
-  prevTime = currTime;
-  prevPendulumAngleDegrees = pendulumAngleDegrees;
-  prevArmAngleDegrees = armAngleDegrees;
 }
