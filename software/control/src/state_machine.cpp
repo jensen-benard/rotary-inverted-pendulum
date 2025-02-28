@@ -22,5 +22,4 @@ void StateMachine::update() {
             }
         }
     }
-
 }

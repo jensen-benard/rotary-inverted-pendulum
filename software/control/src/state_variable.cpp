@@ -1,5 +1,5 @@
 #include "state_variable.hpp"
-
+#include <Arduino.h>
 StateVariable::StateVariable(float initialValue, float initialRateOfChange, float currentTime) {
     value = initialValue;
     rateOfChange = initialRateOfChange;
@@ -9,7 +9,6 @@ StateVariable::StateVariable(float initialValue, float initialRateOfChange, floa
 void StateVariable::update(float newValue, float currentTime) {
     float elapsedTime = currentTime - previousTime;
     rateOfChange = (newValue - value) / elapsedTime;
-
     value = newValue;
     previousTime = currentTime;
 }

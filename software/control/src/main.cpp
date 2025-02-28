@@ -6,7 +6,6 @@
 #include <Encoder.h>
 #include "state_variable.hpp"
 #include "control.hpp"
-#include "reference.hpp"
 #include "actuator.hpp"
 #include "accel_stepper_adapter.hpp"
 #include "encoder_adapter.hpp"
@@ -34,11 +33,6 @@ AccelStepper stepper(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
 constexpr int ENCODER_A_PIN = 2;
 constexpr int ENCODER_B_PIN = 3;
 Encoder encoder(ENCODER_A_PIN, ENCODER_B_PIN);
-
-constexpr int TRAJECTORY_LENGTH = 10;
-constexpr int ANGLE_HOLD_TIME = 3;
-double trajectory[TRAJECTORY_LENGTH] = {0, -90, 0, 90, 0, 45, 100, 0, -80, 30};
-Reference reference(trajectory, TRAJECTORY_LENGTH, ANGLE_HOLD_TIME);
 
 constexpr int MICROSTEPS = 8;
 constexpr float DEGREES_PER_STEPS = 1.8;
@@ -77,9 +71,9 @@ RotaryInvertedPendulumSystem rotaryInvertedPendulumSystem(&stepperAdapter,
                                                             &pendulumAngleRateOfChange, &armAngleRateOfChange,
                                                             &referenceAngle);
 
-State swingUpState(&RotaryInvertedPendulumSystem::resetReferenceAngle, nullptr, &RotaryInvertedPendulumSystem::runSwingUpControl);
-State balanceState(nullptr, nullptr, &RotaryInvertedPendulumSystem::runBalanceControl);
-State stopState(nullptr, nullptr, &RotaryInvertedPendulumSystem::stop);
+State swingUpState(&RotaryInvertedPendulumSystem::resetReferenceAngle, nullptr, &RotaryInvertedPendulumSystem::runSwingUpControl, "swingUp");
+State balanceState(nullptr, nullptr, &RotaryInvertedPendulumSystem::runBalanceControl, "balance");
+State stopState(nullptr, nullptr, &RotaryInvertedPendulumSystem::stop, "emergencyStop");
 
 constexpr float SWING_UP_TRIGGER_ANGLE = 45;
 Transition balanceToSwingUpTransition(&balanceState, &swingUpState, &RotaryInvertedPendulumSystem::swingUpCondition, SWING_UP_TRIGGER_ANGLE);

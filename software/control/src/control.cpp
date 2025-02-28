@@ -27,10 +27,13 @@ LyapunovControlMethod::LyapunovControlMethod(double proportionalGain) {
 }
 
 double LyapunovControlMethod::getOutput(double armAngle, double armAngularVelocity, double pendulumAngle, double pendulumAngularVelocity, double referenceAngle) {
+    (void)armAngle;
+    (void)armAngularVelocity;
+    (void)referenceAngle;
+
     float cosPendulum = cos(deg2rad(pendulumAngle));
     float pendulumAngularVelocityRadians = deg2rad(pendulumAngularVelocity);
     float energy = 0.5 * 0.0005989206600000001 * (pendulumAngularVelocityRadians) * (pendulumAngularVelocityRadians) + 0.095715 * 9.81 * 0.137/2 * (-1 + cosPendulum) * 1.93;
     float controlInput =  proportionalGain * (energy - 0.1241357555) * sign(pendulumAngularVelocityRadians * cosPendulum);
-
     return rad2deg(controlInput);
 }
