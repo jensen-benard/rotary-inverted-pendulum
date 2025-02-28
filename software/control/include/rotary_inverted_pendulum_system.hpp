@@ -55,10 +55,11 @@ class RotaryInvertedPendulumSystem {
 
         static void stop();
 
-    
-        
+        static bool swingUpCondition(float swingUpTriggerAngle);
 
-        
+        static bool balanceCondition(float balanceTriggerAngle);
+
+        static bool emergencyStopCondition(float armAngleLimit);
 };
 
 

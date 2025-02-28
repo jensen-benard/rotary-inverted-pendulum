@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <TMCStepper.h>         // TMCstepper - https://github.com/teemuatlut/TMCStepper
 #include <AccelStepper.h>
-#include <SoftwareSerial.h>     // Software serial for the UART to TMC2209 - https://www.arduino.cc/en/Reference/softwareSerial
+// #include <SoftwareSerial.h>     // Software serial for the UART to TMC2209 - https://www.arduino.cc/en/Reference/softwareSerial
 #include <Stream.h>          // For serial debugging output - https://www.arduino.cc/reference/en/libraries/streaming/
 #include <Encoder.h>
 #include "state_variable.hpp"
@@ -26,8 +26,8 @@ constexpr int SW_TX = 9;            // SoftwareSerial transmit pin - BROWN
 constexpr int SW_RX = 4;            // SoftwareSerial receive pin - YELLOW
 constexpr uint8_t DRIVER_ADDRESS = 0b00; // TMC2209 Driver address according to MS1 and MS2
 constexpr float R_SENSE = 0.11f;    // SilentStepStick series use 0.11 ...and so does my fysetc TMC2209 (?)
-SoftwareSerial SoftSerial(SW_RX, SW_TX, false);                          // Be sure to connect RX to TX and TX to RX between both devices
-TMC2209Stepper TMCdriver(&SoftSerial, R_SENSE, DRIVER_ADDRESS);   // Create TMC driver
+// SoftwareSerial SoftSerial(SW_RX, SW_TX, false);                          // Be sure to connect RX to TX and TX to RX between both devices
+// TMC2209Stepper TMCdriver(&SoftSerial, R_SENSE, DRIVER_ADDRESS);   // Create TMC driver
 AccelStepper stepper(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
 
 
@@ -50,9 +50,6 @@ float ANGLE_OFFSET = 180;
 EncoderAdapter encoderAdapter(&encoder, ANGLE_OFFSET, PULSES_PER_DEGREE);
 AccelStepperAdapter stepperAdapter(&stepper, MICROSTEPS_PER_DEGREE);
 
-Sensor pendulumAngleSensor(&encoderAdapter);
-Sensor armAngleSensor(&stepperAdapter);
-
 double proportionalGain = 80; 
 LyapunovControlMethod lyapunovControlMethod(proportionalGain);
 
@@ -74,25 +71,31 @@ float referenceAngles[TOTAL_INPUTS] = {0, -90, 0, 90, 0, 45, 100, 0, -80, 30};
 TimeVaryingInput referenceAngle(referenceAngles, TOTAL_INPUTS, 0, HOLD_TIME);
 
 RotaryInvertedPendulumSystem rotaryInvertedPendulumSystem(&stepperAdapter,
-                                                            &pendulumAngleSensor, &armAngleSensor,
+                                                            &encoderAdapter, &stepperAdapter,
                                                             &lyapunovControlMethod, &lqrControlMethod,
                                                             &pendulumAngle, &armAngle,
                                                             &pendulumAngleRateOfChange, &armAngleRateOfChange,
                                                             &referenceAngle);
 
-State swingUpState(nullptr, nullptr, &RotaryInvertedPendulumSystem::runSwingUpControl);
-State balanceState(nullptr, nullptr, &rotaryInvertedPendulumSystem::runBalanceControl);
+State swingUpState(&RotaryInvertedPendulumSystem::resetReferenceAngle, nullptr, &RotaryInvertedPendulumSystem::runSwingUpControl);
+State balanceState(nullptr, nullptr, &RotaryInvertedPendulumSystem::runBalanceControl);
+State stopState(nullptr, nullptr, &RotaryInvertedPendulumSystem::stop);
 
 constexpr float SWING_UP_TRIGGER_ANGLE = 45;
+Transition balanceToSwingUpTransition(&balanceState, &swingUpState, &RotaryInvertedPendulumSystem::swingUpCondition, SWING_UP_TRIGGER_ANGLE);
 constexpr float BALANCE_TRIGGER_ANGLE = 20;
+Transition swingUpToBalanceTransition(&swingUpState, &balanceState, &RotaryInvertedPendulumSystem::balanceCondition, BALANCE_TRIGGER_ANGLE);
 constexpr float ARM_ANGLE_LIMIT = 720;
-StateMachine stateMachine(SWING_UP_TRIGGER_ANGLE, BALANCE_TRIGGER_ANGLE, ARM_ANGLE_LIMIT);
+Transition toEmergencyStop(nullptr, &stopState, &RotaryInvertedPendulumSystem::emergencyStopCondition, ARM_ANGLE_LIMIT);
+constexpr int TOTAL_TRANSITIONS = 2;
+Transition* allTransitions[TOTAL_TRANSITIONS] = {&balanceToSwingUpTransition, &swingUpToBalanceTransition};
 
+StateMachine stateMachine(&swingUpState, allTransitions, TOTAL_TRANSITIONS);
 void setup() {
 
   Serial.begin(115200);               // initialize hardware serial for debugging
-  SoftSerial.begin(115200);           // initialize software serial for UART motor control
-  SoftSerial.listen();
+  // SoftSerial.begin(115200);           // initialize software serial for UART motor control
+  // SoftSerial.listen();
 
   // TMCdriver.beginSerial(115200);      // Initialize UART
   // TMCdriver.begin();                                                                                                                                                                                                                                                                                                                            // UART: Init SW UART (if selected) with default 115200 baudrate
@@ -114,36 +117,9 @@ void setup() {
   stepper.setMaxSpeed(5000000); // Steps per second
   stepper.setMinPulseWidth(5);
 
+  rotaryInvertedPendulumSystem.setStateMachine(&stateMachine);
 }
 
 void loop() {
-  systemStates.update(sensors.getArmAngle(), sensors.getPendulumAngle());
-  reference.update();
-
-  float pendulumAngle = systemStates.getPendulumAngle();
-  float pendulumAngularVelocity = systemStates.getPendulumAngularVelocity();
-  float armAngle = systemStates.getArmAngle();
-  float armAngularVelocity = systemStates.getArmAngularVelocity();
-
-  float referenceArmAngle = reference.getCurrentAngle();
-  float controlInput = controller.getOutput(armAngle, armAngularVelocity, pendulumAngle, pendulumAngularVelocity, referenceArmAngle);
-
-  stateMachine.update(pendulumAngle, pendulumAngularVelocity, armAngle, armAngularVelocity);
-
-  StateMachineEvent lastTriggeredEvent = stateMachine.getLastTriggeredEvent();
-
-  if (lastTriggeredEvent == TRIGGER_SWING_UP) {
-    controller.setControlMode(SWING_UP);
-  } else if (lastTriggeredEvent == TRIGGER_BALANCE) {
-    reference.reset(armAngle);
-    controller.setControlMode(BALANCE);
-  } else if (lastTriggeredEvent == ANGLE_LIMIT_REACHED) {
-    stepperActuator.stop();
-    while(true) {
-      continue;
-    }
-  }
-
-  stepperActuator.actuate(controlInput);
-
+  rotaryInvertedPendulumSystem.run();
 }

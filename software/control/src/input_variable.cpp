@@ -7,16 +7,20 @@ StaticInput::StaticInput(float initialValue) {
     value = initialValue;
 }
 
-void StaticInput::reset(float currentTime) {}
-void StaticInput::update(float currentTime) {}
+void StaticInput::reset(float currentTime) {
+    (void)currentTime;
+}
+void StaticInput::update(float currentTime) {
+    (void)currentTime;
+}
 
 float StaticInput::getValue() {
     return value;
 }
 
 TimeVaryingInput::TimeVaryingInput(float* values, int totalValues, float currentTime, const float HOLD_TIME): HOLD_TIME(HOLD_TIME) {
-    values = values;
-    totalValues = totalValues;
+    this->values = values;
+    this->totalValues = totalValues;
     currentIndex = 0;
     previousTime = currentTime;
 }

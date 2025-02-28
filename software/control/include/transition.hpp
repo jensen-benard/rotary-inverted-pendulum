@@ -5,7 +5,7 @@
 
 class Transition {
     public:
-        Transition(State* transitionFromState, State* transitionToState, bool (*conditionFunction)());
+        Transition(State* transitionFromState, State* transitionToState, bool (*conditionFunction)(float), float parameter);
 
         bool isConditionTrue();
         State* getTransitionFromState();
@@ -14,7 +14,8 @@ class Transition {
     private:
         State* transitionFromState;
         State* transitionToState;
-        bool (*conditionFunction)();
+        bool (*conditionFunction)(float);
+        float parameter;
 };
 
 

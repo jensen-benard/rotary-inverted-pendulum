@@ -1,12 +1,12 @@
 #include "accel_stepper_adapter.hpp"
 #include <Arduino.h>
-#include <AccelStepper.h>
 
 constexpr float SECONDS_PER_MICROSECOND = 1e-6;
 
 AccelStepperAdapter::AccelStepperAdapter(AccelStepper* stepper, const int MICROSTEPS_PER_DEGREE): MICROSTEPS_PER_DEGREE(MICROSTEPS_PER_DEGREE) {
     this->stepper = stepper;
     inputSpeed = 0;
+    lastUpdateTime = 0;
 }
 
 double AccelStepperAdapter::getData() {

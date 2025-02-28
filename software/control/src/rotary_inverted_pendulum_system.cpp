@@ -3,6 +3,8 @@
 
 constexpr float SECONDS_PER_MICROSECOND = 1e-6;
 
+RotaryInvertedPendulumSystem* RotaryInvertedPendulumSystem::instance = nullptr;
+
 RotaryInvertedPendulumSystem::RotaryInvertedPendulumSystem(Actuator* stepperMotor, 
     Sensor* pendulumAngleSensor, Sensor* armAngleSensor,
     ControlMethod* swingUpControlMethod, ControlMethod* balanceControlMethod,
@@ -28,6 +30,7 @@ void RotaryInvertedPendulumSystem::setStateMachine(StateMachine* stateMachine) {
 }
 
 void RotaryInvertedPendulumSystem::run() {
+    instance->updateStateVariables();
     stateMachine->update();
 }
 
@@ -48,14 +51,12 @@ void RotaryInvertedPendulumSystem::resetReferenceAngle() {
 }
 
 void RotaryInvertedPendulumSystem::runSwingUpControl() {
-    instance->updateStateVariables();
     float controlInput = instance->swingUpControlMethod->getOutput(instance->armAngle->getValue(), instance->armAngleRateOfChange->getValue(), instance->pendulumAngle->getValue(), instance->pendulumAngleRateOfChange->getValue(), instance->referenceAngle->getValue());
     instance->stepperMotor->actuate(controlInput);
 }
 
 
 void RotaryInvertedPendulumSystem::runBalanceControl() {
-    instance->updateStateVariables();
     float controlInput = instance->balanceControlMethod->getOutput(instance->armAngle->getValue(), instance->armAngleRateOfChange->getValue(), instance->pendulumAngle->getValue(), instance->pendulumAngleRateOfChange->getValue(), instance->referenceAngle->getValue());
     instance->stepperMotor->actuate(controlInput);
 }
@@ -63,4 +64,16 @@ void RotaryInvertedPendulumSystem::runBalanceControl() {
 
 void RotaryInvertedPendulumSystem::stop() {
     instance->stepperMotor->stop();
+}
+
+bool RotaryInvertedPendulumSystem::swingUpCondition(float swingUpTriggerAngle) {
+    return instance->pendulumAngle->getValue() > swingUpTriggerAngle;
+}
+
+bool RotaryInvertedPendulumSystem::balanceCondition(float balanceTriggerAngle) {
+    return instance->pendulumAngle->getValue() < balanceTriggerAngle;
+}
+
+bool RotaryInvertedPendulumSystem::emergencyStopCondition(float armAngleLimit) {
+    return instance->armAngle->getValue() > armAngleLimit;
 }
