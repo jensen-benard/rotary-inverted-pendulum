@@ -2,6 +2,10 @@
 ## Overview
 This repository serves as an archive of documentation and code for modelling, simulating and controlling a rotary inverted pendulum that I built to learn more about control techniques. The focus is on applying multiple control implementations for educational purposes. While it is not actively maintained, all code and documentation are provided to be used as you wish.
 
+## LQR Demonstration
+[Video Link](media/rotary_inverted_pendulum_demo_lqr.mp4) \
+![LQR demo gif](media/rotary_inverted_pendulum_demo_lqr.gif)
+
 ## Contents
 📖 **Documentation** - How to Assemble, Hardware Requirements, Useful Links. \
 ⚙️ **Control Implementations** - Linear Quadratic Regulator (LQR). \
