@@ -1,4 +1,5 @@
 # Bill of Materials
+**Total**: 142.44 NZD
 ## Mechanical
 | Item | Quantity | Cost (NZD) | Source |
 | --- | --- | --- | --- |
@@ -18,7 +19,6 @@
 | Stepper Motor Driver TMC2209 | 1 | $5.87 | [Aliexpress](https://www.aliexpress.com/item/1005004614528741.html) [^1] |
 | Arduino Uno | 1 | $20 | ? [^2] |
 
-**Total**: 142.44 NZD
 
  [^1]: I couldn't get the UART communication working but the STEP/DIR functionality worked just fine, which is all i needed.
  [^2]: I reused an Arduino Uno I bought a long time ago, so the price is estimated.
