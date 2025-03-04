@@ -10,6 +10,7 @@ class Transition {
         bool isConditionTrue();
         State* getTransitionFromState();
         State* getTransitionToState();
+        float getParameter();
 
     private:
         State* transitionFromState;

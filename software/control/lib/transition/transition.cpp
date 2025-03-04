@@ -21,3 +21,8 @@ State* Transition::getTransitionFromState() {
 State* Transition::getTransitionToState() {
     return transitionToState;
 }
+
+
+float Transition::getParameter() {
+    return parameter;
+}

@@ -21,3 +21,7 @@ float StateVariable::getValue() {
 float StateVariable::getRateOfChange() {
     return rateOfChange;
 }
+
+float StateVariable::getPreviousTime() {
+    return previousTime;
+}

@@ -3,18 +3,21 @@
 
 class State {
     public:
-        State(void (*onEnterEventFunction)(), void (*onExitEventFunction)(), void (*duringUpdateEventFunction)(), char* name);
+        State(void (*onEnterEventFunction)(), void (*onExitEventFunction)(), void (*duringUpdateEventFunction)(), const char* name);
         void onEnter();
         void onExit();
         void update();
 
-        char* getName();
+        const char* getName();
+        void (*getOnEnterEventFunction())();
+        void (*getOnExitEventFunction())();
+        void (*getUpdateEventFunction())();
 
     private:
         void (*onEnterEventFunction)();
         void (*onExitEventFunction)();
         void (*duringUpdateEventFunction)();
-        char* name;
+        const char* name;
 };
 
 #endif

@@ -1,10 +1,9 @@
 #include "state.hpp"
 
-State::State(void (*onEnterEventFunction)(), void (*onExitEventFunction)(), void (*duringUpdateEventFunction)(), char* name) {
+State::State(void (*onEnterEventFunction)(), void (*onExitEventFunction)(), void (*duringUpdateEventFunction)(), const char* name): name(name) {
     this->onEnterEventFunction = onEnterEventFunction;
     this->onExitEventFunction = onExitEventFunction;
     this->duringUpdateEventFunction = duringUpdateEventFunction;
-    this->name = name;
 }
 
 void State::onEnter() {
@@ -25,6 +24,18 @@ void State::update() {
     }
 }
 
-char* State::getName() {
+const char* State::getName() {
     return this->name;
+}
+
+void (*State::getOnEnterEventFunction())() {
+    return this->onEnterEventFunction;
+}  
+
+void (*State::getOnExitEventFunction())() {
+    return this->onExitEventFunction;
+}   
+
+void (*State::getUpdateEventFunction())() {
+    return this->duringUpdateEventFunction;
 }

@@ -8,6 +8,7 @@ class StateVariable {
 
         float getValue();
         float getRateOfChange();
+        float getPreviousTime();
 
     private:
         float value;
