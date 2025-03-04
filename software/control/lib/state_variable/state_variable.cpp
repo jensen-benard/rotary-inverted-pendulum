@@ -13,6 +13,7 @@ void StateVariable::update(float newValue, float currentTime) {
     previousTime = currentTime;
 }
 
+
 float StateVariable::getValue() {
     return value;
 }

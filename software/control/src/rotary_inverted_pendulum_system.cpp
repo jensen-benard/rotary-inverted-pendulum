@@ -37,11 +37,10 @@ void RotaryInvertedPendulumSystem::run() {
 
 void RotaryInvertedPendulumSystem::updateStateVariables() {
     float currentTime = micros() * SECONDS_PER_MICROSECOND;
-
+    
     pendulumAngle->update(pendulumAngleSensor->getData(), currentTime);
     armAngle->update(armAngleSensor->getData(), currentTime);
     pendulumAngleRateOfChange->update(pendulumAngle->getRateOfChange(), currentTime);
-    Serial.println(pendulumAngle->getRateOfChange());
     armAngleRateOfChange->update(armAngle->getRateOfChange(), currentTime);
 }
 

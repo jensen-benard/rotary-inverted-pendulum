@@ -1,8 +1,6 @@
 #ifndef CONTROL_HPP
 #define CONTROL_HPP
 
-#include "math_utility.hpp"
-
 class ControlMethod {
     public:
       virtual ~ControlMethod();

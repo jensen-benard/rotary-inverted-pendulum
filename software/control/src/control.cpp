@@ -1,6 +1,6 @@
 #include "control.hpp"
 #include <Arduino.h>
-#include "math_utility.hpp"
+#include <math_utility.hpp>
 
 ControlMethod::~ControlMethod() {}
 

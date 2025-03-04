@@ -1,8 +1,8 @@
 #ifndef STATE_MACHINE_HPP
 #define STATE_MACHINE_HPP
 
-#include "state.hpp"
-#include "transition.hpp"
+#include <state.hpp>
+#include <transition.hpp>
 
 
 class StateMachine {

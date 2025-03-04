@@ -3,12 +3,12 @@
 
 #include "actuator.hpp"
 #include "sensor.hpp"
-#include "state_variable.hpp"
+#include <state_variable.hpp>
 #include "control.hpp"
-#include "transition.hpp"
-#include "state.hpp"
+#include <transition.hpp>
+#include <state.hpp>
 #include "state_machine.hpp"
-#include "input_variable.hpp"
+#include <input_variable.hpp>
 
 
 class RotaryInvertedPendulumSystem {
