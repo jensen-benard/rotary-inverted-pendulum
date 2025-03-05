@@ -54,7 +54,7 @@ constexpr double thetaPendulumDotGain = -958.04047177;
 constexpr double trackingGain = -1000.00000003;
 LQRControlMethod lqrControlMethod(thetaArmGain, thetaArmDotGain, thetaPendulumGain, thetaPendulumDotGain, trackingGain);
 
-StateVariable pendulumAngle(0, 0, 0);
+StateVariable pendulumAngle(180, 0, 0);
 StateVariable armAngle(0, 0, 0);
 StateVariable pendulumAngleRateOfChange(0, 0, 0);
 StateVariable armAngleRateOfChange(0, 0, 0);
