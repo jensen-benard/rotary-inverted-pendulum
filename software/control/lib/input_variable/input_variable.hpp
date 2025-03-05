@@ -34,7 +34,7 @@ class TimeVaryingInput: public InputVariable {
         void update(float currentTime) override;
         float getValue() override;
         const float* getValues();
-        const int getTotalValues();
+        int getTotalValues();
         int getCurrentIndex();
     
     private:

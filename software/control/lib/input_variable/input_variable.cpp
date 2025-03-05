@@ -45,7 +45,7 @@ const float* TimeVaryingInput::getValues() {
     return values;
 }
 
-const int TimeVaryingInput::getTotalValues() {
+int TimeVaryingInput::getTotalValues() {
     return TOTAL_VALUES;
 }
 
