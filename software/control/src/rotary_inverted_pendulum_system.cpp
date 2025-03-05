@@ -51,13 +51,25 @@ void RotaryInvertedPendulumSystem::resetReferenceAngle() {
 }
 
 void RotaryInvertedPendulumSystem::runSwingUpControl() {
-    float controlInput = instance->swingUpControlMethod->getOutput(instance->armAngle->getValue(), instance->armAngleRateOfChange->getValue(), instance->pendulumAngle->getValue(), instance->pendulumAngleRateOfChange->getValue(), instance->referenceAngle->getValue());
+    float armAngle = instance->armAngle->getValue();
+    float armAngleRateOfChange = instance->armAngleRateOfChange->getValue();
+    float pendulumAngle = instance->pendulumAngle->getValue();
+    float pendulumAngleRateOfChange = instance->pendulumAngleRateOfChange->getValue();
+    float referenceAngle = instance->referenceAngle->getValue();
+
+    float controlInput = instance->swingUpControlMethod->getOutput(armAngle, armAngleRateOfChange, pendulumAngle, pendulumAngleRateOfChange, referenceAngle);
     instance->stepperMotor->actuate(controlInput);
 }
 
 
 void RotaryInvertedPendulumSystem::runBalanceControl() {
-    float controlInput = instance->balanceControlMethod->getOutput(instance->armAngle->getValue(), instance->armAngleRateOfChange->getValue(), instance->pendulumAngle->getValue(), instance->pendulumAngleRateOfChange->getValue(), instance->referenceAngle->getValue());
+    float armAngle = instance->armAngle->getValue();
+    float armAngleRateOfChange = instance->armAngleRateOfChange->getValue();
+    float pendulumAngle = instance->pendulumAngle->getValue();
+    float pendulumAngleRateOfChange = instance->pendulumAngleRateOfChange->getValue();
+    float referenceAngle = instance->referenceAngle->getValue();
+
+    float controlInput = instance->balanceControlMethod->getOutput(armAngle, armAngleRateOfChange, pendulumAngle, pendulumAngleRateOfChange, referenceAngle);
     instance->stepperMotor->actuate(controlInput);
 }
 
