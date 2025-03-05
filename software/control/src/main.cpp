@@ -71,13 +71,13 @@ RotaryInvertedPendulumSystem rotaryInvertedPendulumSystem(&stepperAdapter,
                                                             &pendulumAngleRateOfChange, &armAngleRateOfChange,
                                                             &referenceAngle);
 
-State swingUpState(&RotaryInvertedPendulumSystem::resetReferenceAngle, nullptr, &RotaryInvertedPendulumSystem::runSwingUpControl, "swingUp");
+State swingUpState(&RotaryInvertedPendulumSystem::resetReferenceAngle, nullptr, nullptr, "swingUp");
 State balanceState(nullptr, nullptr, &RotaryInvertedPendulumSystem::runBalanceControl, "balance");
 State stopState(nullptr, nullptr, &RotaryInvertedPendulumSystem::stop, "emergencyStop");
 
 constexpr float SWING_UP_TRIGGER_ANGLE = 45;
 Transition balanceToSwingUpTransition(&balanceState, &swingUpState, &RotaryInvertedPendulumSystem::swingUpCondition, SWING_UP_TRIGGER_ANGLE);
-constexpr float BALANCE_TRIGGER_ANGLE = 40;
+constexpr float BALANCE_TRIGGER_ANGLE = 20;
 Transition swingUpToBalanceTransition(&swingUpState, &balanceState, &RotaryInvertedPendulumSystem::balanceCondition, BALANCE_TRIGGER_ANGLE);
 constexpr float ARM_ANGLE_LIMIT = 720;
 Transition toEmergencyStop(nullptr, &stopState, &RotaryInvertedPendulumSystem::emergencyStopCondition, ARM_ANGLE_LIMIT);
