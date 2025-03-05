@@ -18,9 +18,7 @@ float StaticInput::getValue() {
     return value;
 }
 
-TimeVaryingInput::TimeVaryingInput(float* values, int totalValues, float currentTime, const float HOLD_TIME): HOLD_TIME(HOLD_TIME) {
-    this->values = values;
-    this->totalValues = totalValues;
+TimeVaryingInput::TimeVaryingInput(const float values[], const int TOTAL_VALUES, float currentTime, const float HOLD_TIME): values(values), TOTAL_VALUES(TOTAL_VALUES), HOLD_TIME(HOLD_TIME) {
     currentIndex = 0;
     previousTime = currentTime;
 }
@@ -35,10 +33,22 @@ void TimeVaryingInput::update(float currentTime) {
     previousTime = currentTime;
 
     if (elapsedTime > HOLD_TIME) {
-        currentIndex = (currentIndex + 1) % totalValues;
+        currentIndex = (currentIndex + 1) % TOTAL_VALUES;
     }
 }
 
 float TimeVaryingInput::getValue() {
     return values[currentIndex];
 }
+
+const float* TimeVaryingInput::getValues() {
+    return values;
+}
+
+const int TimeVaryingInput::getTotalValues() {
+    return TOTAL_VALUES;
+}
+
+int TimeVaryingInput::getCurrentIndex() {
+    return currentIndex;
+}  

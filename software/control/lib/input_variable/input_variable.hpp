@@ -28,15 +28,18 @@ class StaticInput: public InputVariable {
 
 class TimeVaryingInput: public InputVariable {
     public:
-        TimeVaryingInput(float* values, int totalValues, float currentTime, const float HOLD_TIME);
+        TimeVaryingInput(const float values[], const int TOTAL_VALUES, float currentTime, const float HOLD_TIME);
 
         void reset(float currentTime) override;
         void update(float currentTime) override;
         float getValue() override;
+        const float* getValues();
+        const int getTotalValues();
+        int getCurrentIndex();
     
     private:
-        float* values;
-        int totalValues;
+        const float* values;
+        const int TOTAL_VALUES;
         int currentIndex;
         float previousTime; 
 

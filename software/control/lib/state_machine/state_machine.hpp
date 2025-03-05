@@ -7,15 +7,18 @@
 
 class StateMachine {
     public: 
-        StateMachine(State* initialState, Transition** allTransitions, int totalTransitions);
+        StateMachine(State* initialState, Transition* allTransitions[], int totalTransitions);
 
+        State* getCurrentState();
+        Transition** getAllTransitions();
+        int getTotalTransitions();
         void update();
+
 
     private:
         State* currentState;
         Transition** allTransitions;
         int totalTransitions;
-        int stateActivity;
 
 
 };
