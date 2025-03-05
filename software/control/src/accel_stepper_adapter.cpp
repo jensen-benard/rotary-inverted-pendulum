@@ -15,10 +15,13 @@ double AccelStepperAdapter::getData() {
 }
 
 void AccelStepperAdapter::actuate(float controlInput) {
-    float inputAccel = controlInput;
     float currentTime = micros() * SECONDS_PER_MICROSECOND;
     float elapsedTime = currentTime - lastUpdateTime;
+    lastUpdateTime = currentTime;
+    
+    float inputAccel = controlInput;
     inputSpeed += inputAccel * elapsedTime;
+
     stepper->setSpeed(inputSpeed * MICROSTEPS_PER_DEGREE);
     stepper->runSpeed();
 }   
