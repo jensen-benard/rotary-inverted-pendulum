@@ -4,7 +4,7 @@
 
 ControlMethod::~ControlMethod() {}
 
-LQRControlMethod::LQRControlMethod(double thetaArmGain, double thetaArmDotGain, double thetaPendulumGain, double thetaPendulumDotGain, double trackingGain) {
+LQRControlMethod::LQRControlMethod(float thetaArmGain, float thetaArmDotGain, float thetaPendulumGain, float thetaPendulumDotGain, float trackingGain) {
     this->thetaArmGain = thetaArmGain;
     this->thetaArmDotGain = thetaArmDotGain;
     this->thetaPendulumGain = thetaPendulumGain;
@@ -12,29 +12,29 @@ LQRControlMethod::LQRControlMethod(double thetaArmGain, double thetaArmDotGain, 
     this->trackingGain = trackingGain;
 }
 
-double LQRControlMethod::getOutput(double armAngle, double armAngularVelocity, double pendulumAngle, double pendulumAngularVelocity, double referenceAngle) {
-    double output = - thetaPendulumGain * deg2rad(pendulumAngle)
-                    - thetaPendulumDotGain * deg2rad(pendulumAngularVelocity)
-                    - thetaArmGain * deg2rad(armAngle)
-                    - thetaArmDotGain * deg2rad(armAngularVelocity)
-                    + trackingGain * deg2rad(referenceAngle);
-
-    return rad2deg(output);
+float LQRControlMethod::getOutput(float armAngle, float armAngularVelocity, float pendulumAngle, float pendulumAngularVelocity, float referenceAngle) {
+    float output = - thetaPendulumGain * pendulumAngle
+                   - thetaPendulumDotGain * pendulumAngularVelocity
+                   - thetaArmGain * armAngle
+                   - thetaArmDotGain * armAngularVelocity
+                   + trackingGain * referenceAngle;
+    
+    return rad2deg(output) * PI / 7200;
 }
 
-LyapunovControlMethod::LyapunovControlMethod(double proportionalGain) {
+LyapunovControlMethod::LyapunovControlMethod(float proportionalGain) {
     this->proportionalGain = proportionalGain;
 }
 
-double LyapunovControlMethod::getOutput(double armAngle, double armAngularVelocity, double pendulumAngle, double pendulumAngularVelocity, double referenceAngle) {
+float LyapunovControlMethod::getOutput(float armAngle, float armAngularVelocity, float pendulumAngle, float pendulumAngularVelocity, float referenceAngle) {
     (void)armAngle;
     (void)armAngularVelocity;
     (void)referenceAngle;
 
     float cosPendulum = cos(deg2rad(pendulumAngle));
     float pendulumAngularVelocityRadians = deg2rad(pendulumAngularVelocity);
-    float energy = 0.5 * 0.0005989206600000001 * (pendulumAngularVelocityRadians) * (pendulumAngularVelocityRadians) + 0.095715 * 9.81 * 0.137/2 * (-1 + cosPendulum) * 1.93;
-    float controlInput =  proportionalGain * (energy - 0.1241357555) * sign(pendulumAngularVelocityRadians * cosPendulum);
+    float energy = 0.5f * 0.0005989206600000001f * (pendulumAngularVelocityRadians) * (pendulumAngularVelocityRadians) + 0.095715f * 9.81f * 0.137f/2 * (-1 + cosPendulum) * 1.93f;
+    float output =  proportionalGain * (energy - 0.1241357555f) * sign(pendulumAngularVelocityRadians * cosPendulum);
 
-    return rad2deg(controlInput);
+    return rad2deg(output);
 }

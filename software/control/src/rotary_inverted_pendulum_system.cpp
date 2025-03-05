@@ -26,22 +26,23 @@ RotaryInvertedPendulumSystem::RotaryInvertedPendulumSystem(Actuator* stepperMoto
 }
 
 void RotaryInvertedPendulumSystem::setStateMachine(StateMachine* stateMachine) {
-    this->stateMachine = stateMachine;
+    instance->stateMachine = stateMachine;
 }
 
 void RotaryInvertedPendulumSystem::run() {
     instance->updateStateVariables();
-    stateMachine->update();
+    instance->stateMachine->update();
+
 }
 
 
 void RotaryInvertedPendulumSystem::updateStateVariables() {
     float currentTime = micros() * SECONDS_PER_MICROSECOND;
     
-    pendulumAngle->update(pendulumAngleSensor->getData(), currentTime);
-    armAngle->update(armAngleSensor->getData(), currentTime);
-    pendulumAngleRateOfChange->update(pendulumAngle->getRateOfChange(), currentTime);
-    armAngleRateOfChange->update(armAngle->getRateOfChange(), currentTime);
+    instance->pendulumAngle->update(pendulumAngleSensor->getData(), currentTime);
+    instance->armAngle->update(armAngleSensor->getData(), currentTime);
+    instance->pendulumAngleRateOfChange->update(pendulumAngle->getRateOfChange(), currentTime);
+    instance->armAngleRateOfChange->update(armAngle->getRateOfChange(), currentTime);
 }
 
 
@@ -76,16 +77,19 @@ void RotaryInvertedPendulumSystem::runBalanceControl() {
 
 void RotaryInvertedPendulumSystem::stop() {
     instance->stepperMotor->stop();
+    while(true) {
+        continue;
+    }
 }
 
 bool RotaryInvertedPendulumSystem::swingUpCondition(float swingUpTriggerAngle) {
-    return instance->pendulumAngle->getValue() > swingUpTriggerAngle;
+    return abs(instance->pendulumAngle->getValue()) > swingUpTriggerAngle;
 }
 
 bool RotaryInvertedPendulumSystem::balanceCondition(float balanceTriggerAngle) {
-    return instance->pendulumAngle->getValue() < balanceTriggerAngle;
+    return abs(instance->pendulumAngle->getValue()) < balanceTriggerAngle;
 }
 
 bool RotaryInvertedPendulumSystem::emergencyStopCondition(float armAngleLimit) {
-    return instance->armAngle->getValue() > armAngleLimit;
+    return abs(instance->armAngle->getValue()) > armAngleLimit;
 }

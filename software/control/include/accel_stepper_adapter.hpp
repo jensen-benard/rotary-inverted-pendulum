@@ -8,7 +8,7 @@
 class AccelStepperAdapter : public Sensor, public Actuator {
     public:
         AccelStepperAdapter(AccelStepper* stepper, const int MICROSTEPS_PER_DEGREE);
-        double getData() override;
+        float getData() override;
         void actuate(float controlInput) override;
         void stop() override;
 

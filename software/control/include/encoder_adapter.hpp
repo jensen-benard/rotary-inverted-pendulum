@@ -6,12 +6,12 @@
 
 class EncoderAdapter : public Sensor {
     public:
-        EncoderAdapter(Encoder* encoder, const double ANGLE_OFFSET, const int PULSES_PER_DEGREE);
-        double getData() override;
+        EncoderAdapter(Encoder* encoder, const float ANGLE_OFFSET, const int PULSES_PER_DEGREE);
+        float getData() override;
 
     private:
         Encoder* encoder;
-        const double ANGLE_OFFSET;
+        const float ANGLE_OFFSET;
         const int PULSES_PER_DEGREE;
 };
 

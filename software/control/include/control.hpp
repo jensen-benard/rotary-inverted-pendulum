@@ -4,34 +4,35 @@
 class ControlMethod {
     public:
       virtual ~ControlMethod();
-      virtual double getOutput(double armAngle, double armAngularVelocity, double pendulumAngle, double pendulumAngularVelocity, double referenceAngle)=0;
+      virtual float getOutput(float armAngle, float armAngularVelocity, float pendulumAngle, float pendulumAngularVelocity, float referenceAngle)=0;
   };
   
   class LQRControlMethod: public ControlMethod {
     public:
-      LQRControlMethod(double thetaArmGain, double thetaArmDotGain, double thetaPendulumGain, double thetaPendulumDotGain, double trackingGain);
+      LQRControlMethod(float thetaArmGain, float thetaArmDotGain, float thetaPendulumGain, float thetaPendulumDotGain, float trackingGain);
   
-      double getOutput(double armAngle, double armAngularVelocity, double pendulumAngle, double pendulumAngularVelocity, double referenceAngle) override;
+      float getOutput(float armAngle, float armAngularVelocity, float pendulumAngle, float pendulumAngularVelocity, float referenceAngle) override;
   
     private:
-      double thetaArmGain;
-      double thetaArmDotGain;
-      double thetaPendulumGain;
-      double thetaPendulumDotGain;
-      double trackingGain;
+      float thetaArmGain;
+      float thetaArmDotGain;
+      float thetaPendulumGain;
+      float thetaPendulumDotGain;
+      float trackingGain;
   };
   
   
   class LyapunovControlMethod: public ControlMethod {
     public:
-      LyapunovControlMethod(double proportionalGain);
+      LyapunovControlMethod(float proportionalGain);
   
-      double getOutput(double armAngle, double armAngularVelocity, double pendulumAngle, double pendulumAngularVelocity, double referenceAngle) override;
+      float getOutput(float armAngle, float armAngularVelocity, float pendulumAngle, float pendulumAngularVelocity, float referenceAngle) override;
   
     private:
-      double proportionalGain;
+      float proportionalGain;
       
   };
 
 
 #endif
+

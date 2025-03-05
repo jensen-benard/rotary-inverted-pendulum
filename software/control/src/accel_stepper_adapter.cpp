@@ -9,8 +9,8 @@ AccelStepperAdapter::AccelStepperAdapter(AccelStepper* stepper, const int MICROS
     lastUpdateTime = 0;
 }
 
-double AccelStepperAdapter::getData() {
-    double angle = stepper->currentPosition() / MICROSTEPS_PER_DEGREE;
+float AccelStepperAdapter::getData() {
+    float angle = float(stepper->currentPosition()) / MICROSTEPS_PER_DEGREE;
     return angle;
 }
 
@@ -21,7 +21,6 @@ void AccelStepperAdapter::actuate(float controlInput) {
     
     float inputAccel = controlInput;
     inputSpeed += inputAccel * elapsedTime;
-
     stepper->setSpeed(inputSpeed * MICROSTEPS_PER_DEGREE);
     stepper->runSpeed();
 }   

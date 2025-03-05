@@ -77,7 +77,7 @@ State stopState(nullptr, nullptr, &RotaryInvertedPendulumSystem::stop, "emergenc
 
 constexpr float SWING_UP_TRIGGER_ANGLE = 45;
 Transition balanceToSwingUpTransition(&balanceState, &swingUpState, &RotaryInvertedPendulumSystem::swingUpCondition, SWING_UP_TRIGGER_ANGLE);
-constexpr float BALANCE_TRIGGER_ANGLE = 20;
+constexpr float BALANCE_TRIGGER_ANGLE = 40;
 Transition swingUpToBalanceTransition(&swingUpState, &balanceState, &RotaryInvertedPendulumSystem::balanceCondition, BALANCE_TRIGGER_ANGLE);
 constexpr float ARM_ANGLE_LIMIT = 720;
 Transition toEmergencyStop(nullptr, &stopState, &RotaryInvertedPendulumSystem::emergencyStopCondition, ARM_ANGLE_LIMIT);
