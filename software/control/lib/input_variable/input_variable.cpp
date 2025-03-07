@@ -30,10 +30,9 @@ void TimeVaryingInput::reset(float currentTime) {
 
 void TimeVaryingInput::update(float currentTime) {
     float elapsedTime = currentTime - previousTime;
-    previousTime = currentTime;
-
     if (elapsedTime > HOLD_TIME) {
         currentIndex = (currentIndex + 1) % TOTAL_VALUES;
+        previousTime = currentTime;
     }
 }
 
