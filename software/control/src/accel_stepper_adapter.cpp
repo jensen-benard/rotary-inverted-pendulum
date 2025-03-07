@@ -30,3 +30,9 @@ void AccelStepperAdapter::stop() {
     inputSpeed = 0;
     lastUpdateTime = micros() * SECONDS_PER_MICROSECOND;
 }
+
+
+void AccelStepperAdapter::reset() {
+    inputSpeed = 0;
+    lastUpdateTime = micros() * SECONDS_PER_MICROSECOND;
+}
