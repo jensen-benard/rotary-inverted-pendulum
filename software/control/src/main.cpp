@@ -44,7 +44,7 @@ float ANGLE_OFFSET = 180;
 EncoderAdapter encoderAdapter(&encoder, ANGLE_OFFSET, PULSES_PER_DEGREE);
 AccelStepperAdapter stepperAdapter(&stepper, MICROSTEPS_PER_DEGREE);
 
-double proportionalGain = 80; 
+float proportionalGain = 80; 
 LyapunovControlMethod lyapunovControlMethod(proportionalGain);
 
 constexpr double thetaArmGain = -1000.00000002;
@@ -71,8 +71,8 @@ RotaryInvertedPendulumSystem rotaryInvertedPendulumSystem(&stepperAdapter,
                                                             &pendulumAngleRateOfChange, &armAngleRateOfChange,
                                                             &referenceAngle);
 
-State swingUpState(&RotaryInvertedPendulumSystem::resetReferenceAngle, nullptr, nullptr, "swingUp");
-State balanceState(nullptr, nullptr, &RotaryInvertedPendulumSystem::runBalanceControl, "balance");
+State swingUpState(nullptr, nullptr, nullptr, "swingUp");
+State balanceState(&RotaryInvertedPendulumSystem::reset, nullptr, &RotaryInvertedPendulumSystem::runBalanceControl, "balance");
 State stopState(nullptr, nullptr, &RotaryInvertedPendulumSystem::stop, "emergencyStop");
 
 constexpr float SWING_UP_TRIGGER_ANGLE = 45;
