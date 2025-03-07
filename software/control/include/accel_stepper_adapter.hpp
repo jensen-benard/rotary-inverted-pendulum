@@ -11,6 +11,7 @@ class AccelStepperAdapter : public Sensor, public Actuator {
         float getData() override;
         void actuate(float controlInput) override;
         void stop() override;
+        void reset();
 
     private:
         AccelStepper* stepper;

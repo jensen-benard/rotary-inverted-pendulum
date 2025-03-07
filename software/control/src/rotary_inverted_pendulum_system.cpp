@@ -46,9 +46,10 @@ void RotaryInvertedPendulumSystem::updateStateVariables() {
 }
 
 
-void RotaryInvertedPendulumSystem::resetReferenceAngle() {
+void RotaryInvertedPendulumSystem::reset() {
     float currentTime = micros() * SECONDS_PER_MICROSECOND;
     instance->referenceAngle->reset(currentTime);
+    instance->stepperMotor->stop();
 }
 
 void RotaryInvertedPendulumSystem::runSwingUpControl() {
@@ -64,6 +65,9 @@ void RotaryInvertedPendulumSystem::runSwingUpControl() {
 
 
 void RotaryInvertedPendulumSystem::runBalanceControl() {
+    float currentTime = micros() * SECONDS_PER_MICROSECOND;
+    instance->referenceAngle->update(currentTime);
+
     float armAngle = instance->armAngle->getValue();
     float armAngleRateOfChange = instance->armAngleRateOfChange->getValue();
     float pendulumAngle = instance->pendulumAngle->getValue();

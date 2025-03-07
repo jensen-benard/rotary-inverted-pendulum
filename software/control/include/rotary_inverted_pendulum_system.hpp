@@ -49,7 +49,7 @@ class RotaryInvertedPendulumSystem {
         
         static void runSwingUpControl();
         
-        static void resetReferenceAngle();
+        static void reset();
 
         static void runBalanceControl();
 
