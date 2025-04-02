@@ -10,7 +10,7 @@ Estimates the damping coefficient of the pendulum from an experiment letting the
 ## Experiment method
 ### C++ Arduino Setup
 1. If using vscode, open the ```software/control``` directory as a project (i.e File > Open Folder).
-1. Select the ```env:angled_record``` environment so that the ```free_swing_angle_record.cpp``` file is compiled instead of the ```lqr_control.cpp``` file.
+1. Select the ```env:angled_record``` environment so that the ```main-free_swing_angle_record.cpp``` file is compiled instead of the ```main.cpp``` file and its dependencies.
 2. Make sure the pendulum is left swinging down freely without moving and then compile and upload the program to the arduino.
 3. Open the serial monitor.
 
