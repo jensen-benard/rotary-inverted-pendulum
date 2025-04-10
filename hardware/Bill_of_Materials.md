@@ -24,8 +24,5 @@
  [^2]: I reused an Arduino Uno I bought a long time ago, so the price is estimated.
 
 ## Disclaimer
- The links provided are for reference only. I am not affiliated with or endorsing any specific sellers. Prices, availability, and product specifications may change over time, so please verify the details before purchasing.
-
  All prices include shipping.
-
  Jumper wires and bread boards not included in the BOM.
